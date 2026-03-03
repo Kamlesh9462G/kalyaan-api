@@ -1,0 +1,10 @@
+module.exports.marketService = require('./market.service');
+module.exports.betTypeService = require('./betType.service');
+module.exports.marketBetTypeService = require('./marketBetType.service');
+module.exports.otpService = require('./otp.service');
+module.exports.authService = require('./auth.service');
+module.exports.tokenService = require('./token.service');
+module.exports.betService = require('./bet.service');
+module.exports.customerService = require('./customer.service');
+module.exports.accountService = require('./account.service');
+module.exports.walletService = require('./wallet.service');
