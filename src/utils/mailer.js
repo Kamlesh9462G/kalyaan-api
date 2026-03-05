@@ -5,12 +5,12 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
   }
 });
 
 exports.sendMail = (options) => transporter.sendMail({
-  from: `"Satta App" <${process.env.MAIL_USER}>`,
+  from: `"Satta App" <${process.env.SMTP_USER}>`,
   ...options
 });
