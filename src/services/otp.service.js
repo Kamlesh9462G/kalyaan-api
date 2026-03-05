@@ -1,3 +1,6 @@
+const httpStatus = require('http-status');
+const ApiError = require('../utils/ApiError');
+
 const { Otp } = require("../models/index");
 const mailer = require("../utils/mailer");
 
@@ -24,6 +27,7 @@ exports.generateAndSendOtp = async (email) => {
 };
 
 exports.verifyOtp = async (email, otp) => {
+
   const record = await Otp.findOne({
     email,
     otp,
@@ -31,8 +35,16 @@ exports.verifyOtp = async (email, otp) => {
     expiresAt: { $gt: new Date() }
   });
 
-  if (!record) throw new Error("Invalid or expired OTP");
+  if (!record) {
+    throw new ApiError(
+      httpStatus.status.BAD_REQUEST,
+      "Invalid or expired OTP"
+    );
+  }
 
+  // Mark OTP used
   record.isUsed = true;
   await record.save();
+
+  return true;
 };

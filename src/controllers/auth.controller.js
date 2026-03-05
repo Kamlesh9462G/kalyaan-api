@@ -7,39 +7,57 @@ const catchAsync = require('../utils/catchAsync');
 const { authService } = require("../services/index");
 
 const sendOtp = catchAsync(async (req, res) => {
-  try {
-    const data = await authService.sendOtp(req.body.email);
-    return res.json(data);
-  } catch (e) {
-    res.status(400).json({ message: e.message });
-  }
+  const { email } = req.body;
+
+  const result = await authService.sendOtp(email);
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: result.message,
+    data: result.data || null,
+  });
 });
+
 
 const verifyOtp = catchAsync(async (req, res) => {
-  try {
-    const data = await authService.verifyOtp(req.body);
-    res.json(data);
-  } catch (e) {
-    res.status(400).json({ message: e.message });
-  }
+  const { email, otp } = req.body;
+
+  const result = await authService.verifyOtp({ email, otp });
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: "OTP verified successfully",
+    data: result,
+  });
 });
 
+
 const setMpin = catchAsync(async (req, res) => {
-  try {
-    const data = await authService.setMpin(req.body);
-    res.json(data);
-  } catch (e) {
-    res.status(400).json({ message: e.message });
-  }
+  const { customerId, mpin, device } = req.body;
+
+  const result = await authService.setMpin({ customerId, mpin, device });
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: "MPIN set successfully",
+    data: result,
+  });
 });
 
 const verifyMpin = catchAsync(async (req, res) => {
-  try {
-    const data = await authService.verifyMpin(req.body);
-    res.json(data);
-  } catch (e) {
-    res.status(400).json({ message: e.message });
-  }
+  const { customerId, mpin, device } = req.body;
+
+  const result = await authService.verifyMpin({ customerId, mpin, device });
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: "MPIN verified successfully",
+    data: result,
+  });
 });
 
 module.exports = {
