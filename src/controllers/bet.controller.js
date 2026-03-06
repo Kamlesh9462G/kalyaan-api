@@ -1,3 +1,5 @@
+const httpStatus = require("http-status");
+
 const catchAsync = require("../utils/catchAsync");
 const { betService } = require("../services/index");
 
