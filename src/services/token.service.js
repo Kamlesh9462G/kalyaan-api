@@ -26,7 +26,7 @@ exports.createSession = async (customer, device) => {
 
   if (savedDevice.isBlocked) {
     throw new ApiError(
-      httpStatus.FORBIDDEN,
+      httpStatus.status.FORBIDDEN,
       "This device has been blocked"
     );
   }

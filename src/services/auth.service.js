@@ -1,6 +1,6 @@
 
 const bcrypt = require("bcryptjs");
-
+const { ObjectId } = require("mongodb");
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 
@@ -66,11 +66,11 @@ const verifyOtp = async ({ email, otp }) => {
 
 const setMpin = async ({ customerId, mpin, device }) => {
 
-  const customer = await Customer.findById(customerId);
+  const customer = await Customer.findOne({_id: new ObjectId(customerId)});
 
   if (!customer) {
     throw new ApiError(
-      httpStatus.NOT_FOUND,
+      httpStatus.status.NOT_FOUND,
       "Customer not found"
     );
   }
