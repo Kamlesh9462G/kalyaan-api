@@ -85,8 +85,8 @@ const placeBet = async (customerId, payload) => {
         throw new ApiError(httpStatus.status.BAD_REQUEST, "Digit required");
       }
 
-      if (b.digit.length !== betType.digitLength) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `Invalid digit ${b.digit}`);
+      if (b.digit.length !== betType.digitConfig.digitLength) {
+        throw new ApiError(httpStatus.status.BAD_REQUEST, `Invalid digit ${b.digit}`);
       }
 
       if (b.amount <= 0) {
