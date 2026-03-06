@@ -9,7 +9,8 @@ const otpService = require("./otp.service");
 const tokenService = require("./token.service");
 
 const sendOtp = async (email) => {
-  const customer = await Customer.findOne({ email });
+  console.log("Sending OTP to:", email);
+  // const customer = await Customer.findOne({ email });
 
   await otpService.generateAndSendOtp(email);
 
