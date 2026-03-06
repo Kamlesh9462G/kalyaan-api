@@ -1,5 +1,6 @@
 const httpStatus = require("http-status");
 const mongoose = require("mongoose");
+const { ObjectId } = require("mongodb");
 
 const { BetSlip, BetItem, BetType, Wallet, WalletTransaction } = require("../models/index");
 const ApiError = require("../utils/ApiError");
@@ -17,7 +18,7 @@ const placeBet = async (customerId, payload) => {
 
         console.log(payload)
 
-        const betType = await BetType.findOne({ _id: betTypeId });
+        const betType = await BetType.findOne({ _id: new ObjectId(betTypeId) });
 
         console.log(betType)
         if (!betType) {
