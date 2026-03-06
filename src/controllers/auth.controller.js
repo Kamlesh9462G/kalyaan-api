@@ -4,7 +4,7 @@ const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 
-const { authService } = require("../services/index");
+const { authService, tokenService } = require("../services/index");
 
 const sendOtp = catchAsync(async (req, res) => {
   console.log("Received request to send OTP:", req.body);
@@ -63,9 +63,24 @@ const verifyMpin = catchAsync(async (req, res) => {
   });
 });
 
+
+const refreshTokens = catchAsync(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  const tokens = await tokenService.refreshAccessToken(refreshToken);
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: 'Tokens refreshed successfully',
+    data: { accessToken: tokens },
+  });
+});
+
 module.exports = {
   sendOtp,
   verifyOtp,
   setMpin,
-  verifyMpin
+  verifyMpin,
+  refreshTokens
 }

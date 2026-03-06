@@ -5,9 +5,13 @@ const { customerService, deviceService } = require('../services');
 
 const auth = () => catchAsync(async (req, res, next) => {
 
+  
+
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(httpStatus.status.UNAUTHORIZED).json({
+      success: false,
+      status: httpStatus.status.UNAUTHORIZED,
       message: 'Authentication required'
     });
   }
@@ -18,6 +22,8 @@ const auth = () => catchAsync(async (req, res, next) => {
     console.log('Decoded JWT payload:', payload); // Debugging log
     if (payload.type !== 'access') {
       return res.status(httpStatus.status.UNAUTHORIZED).json({
+        success: false,
+        status: httpStatus.status.UNAUTHORIZED,
         message: 'Invalid token type'
       });
     }
@@ -27,6 +33,8 @@ const auth = () => catchAsync(async (req, res, next) => {
     console.log('Authenticated customer:', customer); // Debugging log
     if (!customer) {
       return res.status(httpStatus.status.UNAUTHORIZED).json({
+        success: false,
+        status: httpStatus.status.UNAUTHORIZED,
         message: 'User not found or inactive'
       });
     }
@@ -58,12 +66,16 @@ const auth = () => catchAsync(async (req, res, next) => {
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(httpStatus.status.UNAUTHORIZED).json({
+        success: false,
+        status: httpStatus.status.UNAUTHORIZED,
         message: 'Token expired',
         code: 'TOKEN_EXPIRED'
       });
     }
 
     return res.status(httpStatus.status.UNAUTHORIZED).json({
+      success: false,
+      status: httpStatus.status.UNAUTHORIZED,
       message: 'Invalid token'
     });
   }
