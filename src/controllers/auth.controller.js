@@ -7,7 +7,9 @@ const catchAsync = require('../utils/catchAsync');
 const { authService } = require("../services/index");
 
 const sendOtp = catchAsync(async (req, res) => {
+  console.log("Received request to send OTP:", req.body);
   const { email } = req.body;
+
 
   const result = await authService.sendOtp(email);
 
