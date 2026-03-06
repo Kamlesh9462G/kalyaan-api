@@ -117,6 +117,7 @@ const placeBet = async (customerId, payload) => {
       [{
         customerId,
         marketId,
+        betTypeId: betType._id,
         marketBetTypeId,
         session: betSession,
         totalAmount,
