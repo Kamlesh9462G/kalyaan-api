@@ -58,21 +58,23 @@ const placeBet = async (customerId, payload) => {
       throw new ApiError(httpStatus.status.BAD_REQUEST, "Session disabled");
     }
 
-    // 4️⃣ Fetch Bet Rate
-    const rateDoc = await BetRate.findOne({
-      marketId,
-      betTypeId: betType._id
-    });
+    // // 4️⃣ Fetch Bet Rate
+    // const rateDoc = await BetRate.findOne({
+    //   marketId,
+    //   betTypeId: betType._id
+    // });
 
-    if (!rateDoc) {
-      throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet rate not configured");
-    }
+    // if (!rateDoc) {
+    //   throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet rate not configured");
+    // }
 
-    const rate = rateDoc[betSession]?.payout;
+    // const rate = rateDoc[betSession]?.payout;
 
-    if (!rate) {
-      throw new ApiError(httpStatus.status.BAD_REQUEST, "Rate not configured for session");
-    }
+    // if (!rate) {
+    //   throw new ApiError(httpStatus.status.BAD_REQUEST, "Rate not configured for session");
+    // }
+
+    let rate = 10;
 
     // 5️⃣ Validate Digits
     let totalAmount = 0;
