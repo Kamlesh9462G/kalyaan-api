@@ -37,6 +37,7 @@ const verifyOtp = catchAsync(async (req, res) => {
 
 
 const setMpin = catchAsync(async (req, res) => {
+  console.log("Received request to set MPIN:", req.body);
   const { customerId, mpin, device } = req.body;
 
   const result = await authService.setMpin({ customerId, mpin, device });

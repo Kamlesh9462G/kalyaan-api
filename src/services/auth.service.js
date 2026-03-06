@@ -68,6 +68,7 @@ const setMpin = async ({ customerId, mpin, device }) => {
 
   const customer = await Customer.findOne({_id: new ObjectId(customerId)});
 
+  console.log("Customer found for MPIN setup:", customer);
   if (!customer) {
     throw new ApiError(
       httpStatus.status.NOT_FOUND,
