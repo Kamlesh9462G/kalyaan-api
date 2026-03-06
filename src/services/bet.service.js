@@ -14,7 +14,9 @@ const {
 const ApiError = require("../utils/ApiError");
 
 const placeBet = async (customerId, payload) => {
+  console.log("Placing bet for customer:", customerId, "with payload:", payload);
 
+    
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -22,6 +24,10 @@ const placeBet = async (customerId, payload) => {
 
     const { marketId, marketBetTypeId, session: betSession, bets } = payload;
 
+    console.log("Market ID:", marketId);
+    console.log("Market Bet Type ID:", marketBetTypeId);
+    console.log("Bet Session:", betSession);
+    console.log("Bets:", bets);
     if (!bets || !bets.length) {
       throw new ApiError(httpStatus.status.BAD_REQUEST, "No bets provided");
     }

@@ -19,7 +19,6 @@ const auth = () => catchAsync(async (req, res, next) => {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    console.log('Decoded JWT payload:', payload); // Debugging log
     if (payload.type !== 'access') {
       return res.status(httpStatus.status.UNAUTHORIZED).json({
         success: false,
@@ -30,7 +29,6 @@ const auth = () => catchAsync(async (req, res, next) => {
 
     const customer = await customerService.getCustomer({ _id: payload.customerId });
 
-    console.log('Authenticated customer:', customer); // Debugging log
     if (!customer) {
       return res.status(httpStatus.status.UNAUTHORIZED).json({
         success: false,

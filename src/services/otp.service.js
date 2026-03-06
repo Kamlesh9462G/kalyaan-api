@@ -8,14 +8,7 @@ exports.generateAndSendOtp = async (email) => {
   try {
     
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  
-    console.log(`Generated OTP for ${email}: ${otp}`);
-    console.log({
-      email,
-      otp,
-      purpose: "login",
-      expiresAt: new Date(Date.now() + 2 * 60 * 1000)
-    })
+
     await Otp.create({
       email,
       otp,

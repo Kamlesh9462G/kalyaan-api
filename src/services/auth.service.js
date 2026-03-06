@@ -9,7 +9,6 @@ const otpService = require("./otp.service");
 const tokenService = require("./token.service");
 
 const sendOtp = async (email) => {
-  console.log("Sending OTP to:", email);
   // const customer = await Customer.findOne({ email });
 
   await otpService.generateAndSendOtp(email);
@@ -68,7 +67,6 @@ const setMpin = async ({ customerId, mpin, device }) => {
 
   const customer = await Customer.findOne({_id: new ObjectId(customerId)});
 
-  console.log("Customer found for MPIN setup:", customer);
   if (!customer) {
     throw new ApiError(
       httpStatus.status.NOT_FOUND,
@@ -110,13 +108,10 @@ const verifyMpin = async ({ customerId, mpin, device }) => {
       "MPIN not set for this customer"
     );
   }
-  console.log("Customer MPIN (hashed):", customer.mpin);
-  console.log("Provided MPIN (plain):", mpin);
 
   // 🔐 Compare MPIN using bcrypt
   const isMatch = await bcrypt.compare(mpin, customer.mpin);
 
-  console.log("MPIN Match:", isMatch);
   if (!isMatch) {
     throw new ApiError(
       httpStatus.status.UNAUTHORIZED,
