@@ -44,7 +44,6 @@ const placeBet = async (customerId, payload) => {
       .findOne({
         _id: marketBetTypeId,
         marketId,
-        isActive: true
       })
       .populate("betTypeId");
 
