@@ -10,30 +10,33 @@ const resultSchema = new mongoose.Schema(
     },
 
     date: {
-      type: String,    // "2026-03-01"
+      type: String, // "2026-03-05"
       required: true,
       index: true
     },
 
-    session: {
+    openPanna: {
+      type: String, // "120"
+      default: null
+    },
+
+    openDigit: {
+      type: String, // "3"
+      default: null
+    },
+
+    closePanna: {
+      type: String, // "157"
+      default: null
+    },
+    closeDigit: {
+      type: String, // "3"
+      default: null
+    },
+    status: {
       type: String,
-      enum: ["open", "close"],
-      required: true
-    },
-
-    resultDigit: {
-      type: String,    // "5", "23", "456"
-      required: true
-    },
-
-    isDeclared: {
-      type: Boolean,
-      default: true
-    },
-
-    declaredAt: {
-      type: Date,
-      default: Date.now
+      enum: ["pending", "open_declared", "close_declared", "completed"],
+      default: "pending"
     },
 
     declaredBy: {
@@ -47,10 +50,7 @@ const resultSchema = new mongoose.Schema(
   }
 );
 
-/* 🔐 UNIQUE RESULT PER MARKET + DATE + SESSION */
-resultSchema.index(
-  { marketId: 1, date: 1, session: 1 },
-  { unique: true }
-);
+// one result per market per day
+resultSchema.index({ marketId: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model("Result", resultSchema);

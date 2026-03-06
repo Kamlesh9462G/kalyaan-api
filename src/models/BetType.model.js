@@ -41,11 +41,6 @@ const betTypeSchema = new mongoose.Schema(
       max: { type: Number, default: 9 }
     },
 
-    allowedDigits: {
-      type: [String],   // ["0","1","2"] (optional)
-      default: []
-    },
-
     // 🔹 SESSION SUPPORT
     supportedSessions: {
       type: [String],

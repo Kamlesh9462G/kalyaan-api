@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { BetType } = require('../models/index');
+const { BetType, BetDigit, BetRate } = require('../models/index');
 
 
 const addBetType = async (betTypeData) => {
@@ -18,8 +18,52 @@ const getBetTypes = async (filterQuery) => {
     }
 }
 
+const addBetTypeDigits = async (betTypeId, digits) => {
+    try {
+        const betType = await BetType.findById(betTypeId);
+        if (!betType) {
+            throw new ApiError(httpStatus.status.NOT_FOUND, "Bet type not found");
+        }
+        const betDigits = await BetDigit.insertMany(digits.map(digit => ({ digit, betTypeId })));
+        return betDigits;
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
+
+const getBetTypeDigits = async (betTypeId) => {
+    try {
+        const betType = await BetType.findById(betTypeId);
+        if (!betType) {
+            throw new ApiError(httpStatus.status.NOT_FOUND, "Bet type not found");
+        }
+        const betDigits = await BetDigit.find({ betTypeId });
+        return betDigits;
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
+
+const addBetTypeRates = async (betRateData) => {
+    try {
+        return await BetRate.create(betRateData)
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
+const getBetTypeRates = async (filterQuery) => {
+    try {
+        return await BetRate.find(filterQuery)
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
+    }
+}
 
 module.exports = {
     addBetType,
-    getBetTypes
+    getBetTypes,
+    addBetTypeDigits,
+    getBetTypeDigits,
+    addBetTypeRates,
+    getBetTypeRates
 }

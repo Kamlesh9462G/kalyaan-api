@@ -1,6 +1,9 @@
 module.exports.Market = require('./Market.model');
 module.exports.BetType = require('./BetType.model');
+module.exports.BetRate = require('./BetRate.model');
+module.exports.BetDigit = require('./BetDigit.model');
 module.exports.MarketBetType = require('./MarketBetType.model');
+module.exports.Result = require('./Result.model');
 module.exports.Customer = require('./customer.model');
 module.exports.Otp = require('./otp.model');
 module.exports.BetItem = require('./BetItem.model');

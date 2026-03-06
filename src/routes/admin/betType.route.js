@@ -10,6 +10,14 @@ const { betTypeController } = require('../../controllers/admin/index');
 router.post('/', betTypeController.addBetType);
 router.get('/', betTypeController.getBetTypes);
 
+router.post('/:id/digits', betTypeController.addBetTypeDigits);
+router.get('/:id/digits', betTypeController.getBetTypeDigits);
+
+router.post('/:id/rates', betTypeController.addBetTypeRates);
+router.get('/rates', betTypeController.getBetTypeRates);
+
+
+
 
 
 module.exports = router;
