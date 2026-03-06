@@ -17,29 +17,29 @@ const placeBet = async (customerId, payload) => {
 
         console.log(payload)
 
-        const betType = await BetType.findById(betTypeId);
+        const betType = await BetType.findOne({ _id: betTypeId });
 
         console.log(betType)
         if (!betType) {
-            throw new Error("Invalid bet type");
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid bet type");
         }
 
         if (!betType.supportedSessions.includes(betSession)) {
-            throw new Error("Session not allowed for this bet type");
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Session not allowed for this bet type");
         }
 
         let totalAmount = 0;
 
         digits.forEach(d => {
             if (d.digit.length !== betType.digitLength) {
-                throw new Error(`Invalid digit ${d.digit}`);
+                throw new ApiError(httpStatus.status.BAD_REQUEST, `Invalid digit ${d.digit}`);
             }
             totalAmount += d.amount;
         });
 
         const wallet = await Wallet.findOne({ customerId }).session(session);
         if (!wallet || wallet.balance < totalAmount) {
-            throw new Error("Insufficient wallet balance");
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient wallet balance");
         }
 
         wallet.balance -= totalAmount;
@@ -87,7 +87,6 @@ const placeBet = async (customerId, payload) => {
         session.endSession();
 
         return {
-            message: "Bet placed successfully",
             betSlipId: betSlip[0]._id,
             totalAmount
         };

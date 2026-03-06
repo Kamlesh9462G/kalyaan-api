@@ -63,9 +63,13 @@ const getMarketBetTypes = async (marketId) => {
 
           marketId: 1,
           marketName: "$market.name",
+          marketTimings: "$market.timings",
 
           betTypeId: 1,
           betTypeName: "$betType.name",
+          digitConfig: "$betType.digitConfig",
+          description: "$betType.description",
+          
 
           sessions: 1,
           status: 1,
