@@ -12,6 +12,7 @@ const placeBet = catchAsync(async (req, res) => {
 
   return res.status(httpStatus.status.OK).json({
     success: true,
+    status:httpStatus.status.OK,
     message: "Bet placed successfully",
     data: result
   });
