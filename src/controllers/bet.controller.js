@@ -18,7 +18,21 @@ const placeBet = catchAsync(async (req, res) => {
   });
 
 });
+const getBetHistory = catchAsync(async (req, res) => {
 
+    const customerId = req.customer.customerId;
+
+    const data = await betService.getBetHistory(customerId);
+
+  return res.status(httpStatus.status.OK).json({
+    success: true,
+    status:httpStatus.status.OK,
+    message: "Bet history fetched successfully",
+    data: data
+  });
+
+});
 module.exports = {
-    placeBet
+    placeBet,
+    getBetHistory
 }

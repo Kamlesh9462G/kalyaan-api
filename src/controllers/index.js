@@ -3,3 +3,4 @@ module.exports.betController = require('./bet.controller');
 module.exports.accountController = require('./account.controller');
 module.exports.walletController = require('./wallet.controller');
 module.exports.marketController = require('./market.controller');
+module.exports.rateController = require('./rate.controller');

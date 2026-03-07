@@ -9,3 +9,4 @@ module.exports.customerService = require('./customer.service');
 module.exports.accountService = require('./account.service');
 module.exports.walletService = require('./wallet.service');
 module.exports.resultService = require('./result.service');
+module.exports.rateService = require('./rate.service');

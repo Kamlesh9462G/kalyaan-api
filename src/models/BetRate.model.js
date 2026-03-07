@@ -25,6 +25,11 @@ const betRateSchema = new mongoose.Schema(
       default: "both"
     },
 
+    description: {
+      type: String,
+      default: null
+    },
+
     // 🔹 RATE CONFIG
     rate: {
       type: Number,

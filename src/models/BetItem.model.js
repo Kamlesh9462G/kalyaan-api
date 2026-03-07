@@ -38,6 +38,11 @@ const betItemSchema = new mongoose.Schema(
     possibleWinAmount: {
       type: Number
     },
+    winAmount: {
+      type: Number,
+      default: 0
+    },
+
 
     // 🔹 RESULT
     status: {
