@@ -3,6 +3,7 @@ const marketRoute = require("./market.route");
 const betTypeRoute = require("./betType.route");
 const marketBetTypeRoute = require("./marketBetType.route");
 const resultRoute = require("./result.route");
+const walletRoute = require('./wallet.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -21,7 +22,12 @@ const defaultRoutes = [
     {
         path:'/results',
         route:resultRoute
+    },
+    {
+        path:'/wallet',
+        route:walletRoute
     }
+
 ];
 
 defaultRoutes.forEach((route) => {

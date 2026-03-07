@@ -151,7 +151,9 @@ const placeBet = async (customerId, payload) => {
             balanceBefore,
             balanceAfter,
             referenceType: "betItem",
-            referenceId: item._id
+            referenceId: item._id,
+            txnId: txnId || `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
+
         }));
 
         await WalletTransaction.insertMany(walletTxns, { session });

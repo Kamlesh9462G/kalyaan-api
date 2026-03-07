@@ -12,4 +12,6 @@ module.exports.Wallet = require('./wallet.model');
 module.exports.WalletTransaction = require('./walletTransaction.model');
 module.exports.BankAccount = require('./bankAccount.model');
 module.exports.UpiAccount = require('./upiAccount.model');
+module.exports.Deposit = require('./deposit.model');
+module.exports.Withdrawal = require('./withdraw.model');
 
