@@ -31,9 +31,26 @@ const getBankAccounts = async (req, res) => {
     });
 
 }
+const updateBankAccount = async (req, res) => {
 
+    const customerId = req.customer.customerId;
+    const accountId = req.query.id;
+
+    const result = await accountService.updateBankAccount(
+        customerId,
+        accountId,
+        req.body
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Bank account updated successfully",
+        data: result
+    });
+};
 const addUpiAccount = async (req, res) => {
-    req.body.customerId = req.customer.customerId; // Assuming auth middleware sets req.user
+    req.body.customerId = req.customer.customerId;
 
     const result = await accountService.addUpiAccount(req.body);
 
@@ -57,10 +74,28 @@ const getUpiAccounts = async (req, res) => {
     });
 
 }
+const updateUpiAccount = async(req,res)=>{
+        const customerId = req.customer.customerId;
+    const accountId = req.query.id;
 
+    const result = await accountService.updateUpiAccount(
+        customerId,
+        accountId,
+        req.body
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "UPI account updated successfully",
+        data: result
+    });
+}
 module.exports = {
     addBankAccount,
     getBankAccounts,
     addUpiAccount,
-    getUpiAccounts
+    getUpiAccounts,
+    updateBankAccount,
+    updateUpiAccount
 }

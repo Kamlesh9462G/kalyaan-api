@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const { ObjectId } = require('mongodb')
 const ApiError = require('../utils/ApiError');
 
 const { BankAccount, UpiAccount } = require("../models/index");
@@ -22,15 +23,41 @@ const getBankAccounts = async (filterQuery) => {
 }
 
 
-const addUpiAccount = async (upiAccountData) => {
-
+const updateBankAccount = async (customerId, accountId, updateData) => {
     try {
-        return await UpiAccount.create(upiAccountData);
-    } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
-    }
 
-}
+        const filter = {
+            _id: new ObjectId(accountId),
+            customerId: new ObjectId(customerId)
+        };
+
+        // If setting default account
+        if (updateData.isDefault === true) {
+
+            // remove default from other accounts
+            await BankAccount.updateMany(
+                { customerId: new ObjectId(customerId) },
+                { $set: { isDefault: false } }
+            );
+
+        }
+
+        const updatedAccount = await BankAccount.findOneAndUpdate(
+            filter,
+            { $set: updateData },
+            { new: true }
+        );
+
+        return updatedAccount;
+
+    } catch (error) {
+        throw new ApiError(
+            httpStatus.status.INTERNAL_SERVER_ERROR,
+            error.message
+        );
+    }
+};
+
 const getUpiAccounts = async (filterQuery) => {
     try {
         return await UpiAccount.find();
@@ -38,10 +65,44 @@ const getUpiAccounts = async (filterQuery) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 }
+const updateUpiAccount = async (customerId, accountId, updateData) => {
+    try {
 
+        const filter = {
+            _id: new ObjectId(accountId),
+            customerId: new ObjectId(customerId)
+        };
+
+        // If setting default account
+        if (updateData.isDefault === true) {
+
+            // remove default from other accounts
+            await UpiAccount.updateMany(
+                { customerId: new ObjectId(customerId) },
+                { $set: { isDefault: false } }
+            );
+
+        }
+
+        const updatedAccount = await UpiAccount.findOneAndUpdate(
+            filter,
+            { $set: updateData },
+            { new: true }
+        );
+
+        return updatedAccount;
+
+    } catch (error) {
+        throw new ApiError(
+            httpStatus.status.INTERNAL_SERVER_ERROR,
+            error.message
+        );
+    }
+}
 module.exports = {
     addBankAccount,
     getBankAccounts,
-    addUpiAccount,
-    getUpiAccounts
+    updateBankAccount,
+    getUpiAccounts,
+    updateUpiAccount
 }
