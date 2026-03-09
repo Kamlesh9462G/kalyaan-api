@@ -6,7 +6,7 @@ const { customerService, deviceService } = require('../services');
 const auth = () => catchAsync(async (req, res, next) => {
 
   
-
+console.log("Auth middleware called");
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(httpStatus.status.UNAUTHORIZED).json({
