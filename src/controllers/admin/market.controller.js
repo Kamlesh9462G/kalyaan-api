@@ -3,7 +3,7 @@ const ApiError = require('../../utils/ApiError');
 const catchAsync = require('../../utils/catchAsync');
 const { marketService } = require('../../services/index');
 const addMarket = catchAsync(async (req, res) => {
-    const market = await marketService.addMarket(req, res);
+    const market = await marketService.addMarket(req.body);
     res.status(httpStatus.status.CREATED).send(market);
 });
 const getMarket = catchAsync(async (req, res) => {

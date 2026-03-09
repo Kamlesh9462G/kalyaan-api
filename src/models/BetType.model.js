@@ -61,6 +61,7 @@ const betTypeSchema = new mongoose.Schema(
         "ANY",
         "UNIQUE",
         "PAIR",
+        "DOUBLE",
         "TRIPLE",
         "SINGLE_PANNA",
         "DOUBLE_PANNA",
@@ -92,6 +93,7 @@ const betTypeSchema = new mongoose.Schema(
       "single",
       "double",
       "triple",
+      "panna_single",
       "panna",
       "sangam"
     ]
