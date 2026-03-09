@@ -114,7 +114,7 @@ exports.refreshAccessToken = async (refreshToken) => {
       throw new ApiError(httpStatus.status.UNAUTHORIZED, "Refresh token expired");
     }
 
-    throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid refresh token");
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Invalid refresh token");
   }
 };
 
