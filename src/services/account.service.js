@@ -32,12 +32,12 @@ const updateBankAccount = async (customerId, accountId, updateData) => {
         };
 
         // If setting default account
-        if (updateData.isDefault === true) {
+        if (updateData.isPrimary === true) {
 
             // remove default from other accounts
             await BankAccount.updateMany(
                 { customerId: new ObjectId(customerId) },
-                { $set: { isDefault: false } }
+                { $set: { isPrimary: false } }
             );
 
         }
@@ -74,12 +74,12 @@ const updateUpiAccount = async (customerId, accountId, updateData) => {
         };
 
         // If setting default account
-        if (updateData.isDefault === true) {
+        if (updateData.isPrimary === true) {
 
             // remove default from other accounts
             await UpiAccount.updateMany(
                 { customerId: new ObjectId(customerId) },
-                { $set: { isDefault: false } }
+                { $set: { isPrimary: false } }
             );
 
         }
