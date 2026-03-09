@@ -5,6 +5,7 @@ const accountRoute = require('./account.route')
 const walletRoute = require('./wallet.route')
 const marketRoute = require('./market.route')
 const rateRoute = require('./rate.route')
+const customerRoute = require('./customer.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -31,6 +32,10 @@ const defaultRoutes = [
     {
         path:"/rates",
         route:rateRoute
+    },
+       {
+        path:"/customer",
+        route:customerRoute
     }
 ];
 
