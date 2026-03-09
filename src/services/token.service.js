@@ -106,15 +106,16 @@ exports.refreshAccessToken = async (refreshToken) => {
 
 
     return newAccessToken;
-    
+
 
   } catch (error) {
+    console.log(error)
 
     if (error.name === "TokenExpiredError") {
       throw new ApiError(httpStatus.status.UNAUTHORIZED, "Refresh token expired");
     }
 
-    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Invalid refresh token");
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, error.message || "Invalid refresh token");
   }
 };
 
