@@ -17,8 +17,21 @@ const setCustomerName = catchAsync(async (req, res) => {
         data: result
     });
 });
+const getCustomerProfile = catchAsync(async (req, res) => {
 
+    const result = await customerService.getCustomerProfile(
+        req.customer.customerId
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Customer profile fetched successfully",
+        data: result
+    });
+});
 module.exports = {
-    setCustomerName
+    setCustomerName,
+    getCustomerProfile
 }
 

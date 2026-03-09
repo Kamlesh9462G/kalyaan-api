@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const { ObjectId } = require('mongodb');
 const { Customer } = require('../models/index');
 const ApiError = require('../utils/ApiError');
 
@@ -22,7 +23,40 @@ const setCustomerName = async (customerId, name) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 }
+
+const getCustomerProfile = async (customerId) => {
+    try {
+        return await Customer.aggregate([
+            {
+                '$match': {
+                    '_id': new ObjectId(customerId)
+                }
+            }, {
+                '$lookup': {
+                    'from': 'wallets',
+                    'localField': '_id',
+                    'foreignField': 'customerId',
+                    'as': 'wallet'
+                }
+            }, {
+                '$project': {
+                    'name': 1,
+                    'email': 1,
+                    'walletBalance': {
+                        '$arrayElemAt': [
+                            '$wallet.balance', 0
+                        ]
+                    }
+                }
+            }
+        ]);
+
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
 module.exports = {
     getCustomer,
-    setCustomerName
+    setCustomerName,
+    getCustomerProfile
 }
