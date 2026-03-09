@@ -58,7 +58,15 @@ const updateBankAccount = async (customerId, accountId, updateData) => {
         );
     }
 };
+const addUpiAccount = async (upiAccountData) => {
 
+    try {
+        return await UpiAccount.create(upiAccountData);
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+
+}
 const getUpiAccounts = async (filterQuery) => {
     try {
         return await UpiAccount.find();
@@ -105,5 +113,6 @@ module.exports = {
     getBankAccounts,
     updateBankAccount,
     getUpiAccounts,
-    updateUpiAccount
+    updateUpiAccount,
+    addUpiAccount
 }
