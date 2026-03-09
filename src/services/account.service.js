@@ -24,6 +24,7 @@ const getBankAccounts = async (filterQuery) => {
 
 
 const updateBankAccount = async (customerId, accountId, updateData) => {
+    console.log(customerId, accountId, updateData)
     try {
 
         const filter = {
