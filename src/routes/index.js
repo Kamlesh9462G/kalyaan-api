@@ -6,6 +6,8 @@ const walletRoute = require('./wallet.route')
 const marketRoute = require('./market.route')
 const rateRoute = require('./rate.route')
 const customerRoute = require('./customer.route')
+const quickActionRoute = require('./quickAction.route')
+const sidebarRoute = require('./sidebar.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -14,28 +16,36 @@ const defaultRoutes = [
         route: authRoute,
     },
     {
-        path:'/bets',
-        route:betRoute
+        path: '/bets',
+        route: betRoute
     },
     {
-        path:'/accounts',
-        route:accountRoute
+        path: '/accounts',
+        route: accountRoute
     },
     {
-        path:'/wallet',
-        route:walletRoute
+        path: '/wallet',
+        route: walletRoute
     },
     {
-        path:"/markets",
-        route:marketRoute
+        path: "/markets",
+        route: marketRoute
     },
     {
-        path:"/rates",
-        route:rateRoute
+        path: "/rates",
+        route: rateRoute
     },
-       {
-        path:"/customer",
-        route:customerRoute
+    {
+        path: "/customer",
+        route: customerRoute
+    },
+    {
+        path: '/quick-actions',
+        route: quickActionRoute
+    },
+    {
+        path: '/sidebars',
+        route: sidebarRoute
     }
 ];
 

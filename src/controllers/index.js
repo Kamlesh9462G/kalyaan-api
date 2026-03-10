@@ -5,3 +5,5 @@ module.exports.walletController = require('./wallet.controller');
 module.exports.marketController = require('./market.controller');
 module.exports.rateController = require('./rate.controller');
 module.exports.customerController = require('./customer.controller');
+module.exports.quickActionController = require('./quickAction.controller');
+module.exports.sidebarController = require('./sidebar.controller')

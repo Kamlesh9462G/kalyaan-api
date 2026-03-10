@@ -3,7 +3,9 @@ const marketRoute = require("./market.route");
 const betTypeRoute = require("./betType.route");
 const marketBetTypeRoute = require("./marketBetType.route");
 const resultRoute = require("./result.route");
-const walletRoute = require('./wallet.route')
+const walletRoute = require('./wallet.route');
+const quickActionRoute = require('./quickAction.route')
+const sidebarRoute = require('./sidebar.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -12,20 +14,28 @@ const defaultRoutes = [
         route: marketRoute,
     },
     {
-        path:'/bet-types',
-        route:betTypeRoute
+        path: '/bet-types',
+        route: betTypeRoute
     },
     {
-        path:'/market-bet-types',
-        route:marketBetTypeRoute
+        path: '/market-bet-types',
+        route: marketBetTypeRoute
     },
     {
-        path:'/results',
-        route:resultRoute
+        path: '/results',
+        route: resultRoute
     },
     {
-        path:'/wallet',
-        route:walletRoute
+        path: '/wallet',
+        route: walletRoute
+    },
+    {
+        path: '/quick-actions',
+        route: quickActionRoute
+    },
+    {
+        path: '/sidebars',
+        route: sidebarRoute
     }
 
 ];

@@ -10,3 +10,5 @@ module.exports.accountService = require('./account.service');
 module.exports.walletService = require('./wallet.service');
 module.exports.resultService = require('./result.service');
 module.exports.rateService = require('./rate.service');
+module.exports.quickActionService = require('./quickAction.service');
+module.exports.sidebarService = require('./sidebar.service')

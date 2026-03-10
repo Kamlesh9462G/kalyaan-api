@@ -14,4 +14,6 @@ module.exports.BankAccount = require('./bankAccount.model');
 module.exports.UpiAccount = require('./upiAccount.model');
 module.exports.Deposit = require('./deposit.model');
 module.exports.Withdrawal = require('./withdraw.model');
+module.exports.QuickAction = require('./QuickAction.model');
+module.exports.Sidebar = require('./sidebar.model')
 
