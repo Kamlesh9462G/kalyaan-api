@@ -18,6 +18,20 @@ const getTransactions = catchAsync(async (req, res) => {
 
 })
 
+const getCustomerWallet = catchAsync(async (req, res) => {
+
+    const wallet = await walletService.getCustomerWallet(req.customer.customerId);
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Wallet fetched successfully",
+        data: wallet,
+    });
+
+
+})
+
 
 const createDeposit = async (req, res) => {
 
@@ -53,5 +67,6 @@ const createWithdraw = async (req, res) => {
 module.exports = {
     getTransactions,
     createDeposit,
-    createWithdraw
+    createWithdraw,
+    getCustomerWallet
 }
