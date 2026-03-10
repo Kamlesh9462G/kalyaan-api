@@ -7,3 +7,4 @@ module.exports.rateController = require('./rate.controller');
 module.exports.customerController = require('./customer.controller');
 module.exports.quickActionController = require('./quickAction.controller');
 module.exports.sidebarController = require('./sidebar.controller')
+module.exports.appConfigController = require('./appConfig.controller')

@@ -8,6 +8,8 @@ const rateRoute = require('./rate.route')
 const customerRoute = require('./customer.route')
 const quickActionRoute = require('./quickAction.route')
 const sidebarRoute = require('./sidebar.route')
+const appConfigRoute = require('./appConfig.route')
+
 const router = express.Router();
 
 const defaultRoutes = [
@@ -46,6 +48,10 @@ const defaultRoutes = [
     {
         path: '/sidebars',
         route: sidebarRoute
+    },
+    {
+        path: '/app-config',
+        route: appConfigRoute
     }
 ];
 
