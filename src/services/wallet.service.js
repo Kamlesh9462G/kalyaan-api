@@ -5,7 +5,7 @@ const { Wallet, WalletTransaction, Deposit, Withdrawal } = require('../models/in
 
 const getTransactions = async (customerId) => {
   try {
-    const wallet = await Wallet.findOne({ customer: customerId });
+    const wallet = await Wallet.findOne({ customerId: customerId });
     if (!wallet) {
       throw new ApiError(httpStatus.status.NOT_FOUND, "Wallet not found for the customer")
     }
@@ -16,8 +16,9 @@ const getTransactions = async (customerId) => {
 }
 
 const getCustomerWallet = async (customerId) => {
+  console.log(customerId)
   try {
-    return await Wallet.find({ customer: customerId })
+    return await Wallet.find({ customerId: customerId })
   } catch (error) {
     throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
 
