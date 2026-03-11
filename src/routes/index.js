@@ -10,6 +10,9 @@ const quickActionRoute = require('./quickAction.route')
 const sidebarRoute = require('./sidebar.route')
 const appConfigRoute = require('./appConfig.route')
 const supportRoute = require('./support.route')
+const guideRoute = require('./guide.route')
+const gameBetGuideRoute = require('./gameBetGuide.route')
+const faqRoute = require('./faq.route')
 
 const router = express.Router();
 
@@ -57,6 +60,18 @@ const defaultRoutes = [
     {
         path: '/support',
         route: supportRoute
+    },
+    {
+        path: '/guide',
+        route: guideRoute
+    },
+    {
+        path: '/game-bet-guides',
+        route: gameBetGuideRoute
+    },
+    {
+        path: '/faq',
+        route: faqRoute
     }
 ];
 
