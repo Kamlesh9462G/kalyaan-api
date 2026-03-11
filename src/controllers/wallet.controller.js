@@ -56,11 +56,14 @@ const createWithdraw = async (req, res) => {
         req.body
     );
 
-    res.json({
+
+    return res.status(httpStatus.status.OK).json({
         success: true,
+        status: httpStatus.status.OK,
         message: "Withdraw request submitted",
-        data
+        data: data,
     });
+
 
 };
 
