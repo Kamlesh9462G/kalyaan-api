@@ -12,4 +12,5 @@ module.exports.resultService = require('./result.service');
 module.exports.rateService = require('./rate.service');
 module.exports.quickActionService = require('./quickAction.service');
 module.exports.sidebarService = require('./sidebar.service');
-module.exports.appConfigService = require('./appConfig.service')
+module.exports.appConfigService = require('./appConfig.service');
+module.exports.supportService = require('./support.service')

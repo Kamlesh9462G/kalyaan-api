@@ -17,4 +17,6 @@ module.exports.Withdrawal = require('./withdraw.model');
 module.exports.QuickAction = require('./QuickAction.model');
 module.exports.Sidebar = require('./sidebar.model');
 module.exports.PaymentFeature = require('./paymentFeature.model')
+module.exports.SupportTicket = require('./supportTicket.model');
+module.exports.TicketMessage = require('./ticketMessage.model')
 

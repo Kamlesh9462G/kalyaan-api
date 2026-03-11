@@ -5,4 +5,5 @@ module.exports.resultController = require('./result.controller');
 module.exports.walletController = require('./wallet.controller');
 module.exports.quickActionController = require('./quickAction.controller');
 module.exports.sidebarController = require('./sidebar.controller');
-module.exports.appConfigController = require('./appConfig.controller')
+module.exports.appConfigController = require('./appConfig.controller');
+module.exports.supportController = require('./support.controller')

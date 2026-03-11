@@ -7,6 +7,7 @@ const walletRoute = require('./wallet.route');
 const quickActionRoute = require('./quickAction.route')
 const sidebarRoute = require('./sidebar.route')
 const appConfigRoute = require('./appConfig.route')
+const supportRoute = require('./support.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -41,6 +42,10 @@ const defaultRoutes = [
     {
         path: '/app-config',
         route: appConfigRoute
+    },
+    {
+        path: '/support',
+        route: supportRoute
     }
 
 ];
