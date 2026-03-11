@@ -10,6 +10,7 @@ const createTicket = async (ticketData) => {
     try {
 
         const ticket = await SupportTicket.create(ticketData);
+        console.log(ticket)
 
         await TicketMessage.create({
             ticketId: ticket._id,

@@ -7,11 +7,6 @@ const supportTicketSchema = new mongoose.Schema({
         required: true,
     },
 
-    ticketId: {
-        type: String,
-        unique: true
-    },
-
     category: {
         type: String,
         enum: [
