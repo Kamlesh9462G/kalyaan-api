@@ -27,6 +27,11 @@ const depositSchema = new mongoose.Schema(
       required: true,
       unique: true
     },
+    utrNumber: {
+      type: String,
+      required: true,
+      index: true
+    },
 
     status: {
       type: String,

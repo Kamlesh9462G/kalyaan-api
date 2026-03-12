@@ -310,15 +310,16 @@ const addWalletBalance = async (payload) => {
 };
 
 
-const createDeposit = async (customerId, payload) => {
+const createDeposit = async (payload) => {
 
-  const { amount, method, transactionId, meta } = payload;
+  const { amount, method, meta, customerId ,utrNumber} = payload;
 
   const deposit = await Deposit.create({
     customerId,
     amount,
     method,
-    transactionId,
+    utrNumber,
+    transactionId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
     meta
   });
 

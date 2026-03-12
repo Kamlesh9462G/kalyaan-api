@@ -35,15 +35,15 @@ const getCustomerWallet = catchAsync(async (req, res) => {
 
 const createDeposit = async (req, res) => {
 
-    const data = await walletService.createDeposit(
-        req.customer.customerId,
-        req.body
-    );
+    req.body["customerId"] = req.customer.customerId;
 
-    return res.json({
+    const data = await walletService.createDeposit(req.body);
+
+    return res.status(httpStatus.status.OK).json({
         success: true,
+        status: httpStatus.status.OK,
         message: "Deposit request submitted",
-        data
+        data: data,
     });
 
 };
