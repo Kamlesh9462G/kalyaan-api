@@ -20,9 +20,13 @@ const placeBet = catchAsync(async (req, res) => {
 });
 const getBetHistory = catchAsync(async (req, res) => {
 
-    const customerId = req.customer.customerId;
+          let filterQuery = {};
+  
+      filterQuery["customerId"] = new ObjectId(req.customer.customerId)
 
-    const data = await betService.getBetHistory(customerId);
+
+
+    const data = await betService.getBetHistory(filterQuery);
 
   return res.status(httpStatus.status.OK).json({
     success: true,

@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const { ObjectId } = require('mongodb')
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -21,7 +22,11 @@ const addBankAccount = async (req, res) => {
 }
 const getBankAccounts = async (req, res) => {
 
-    const result = await accountService.getBankAccounts(req.query);
+    let filterQuery = {};
+
+    filterQuery["customerId"] = new ObjectId(req.customer.customerId)
+
+    const result = await accountService.getBankAccounts(filterQuery);
 
     return res.status(httpStatus.status.OK).json({
         success: true,
@@ -64,7 +69,11 @@ const addUpiAccount = async (req, res) => {
 }
 const getUpiAccounts = async (req, res) => {
 
-    const result = await accountService.getUpiAccounts(req.query);
+        let filterQuery = {};
+
+    filterQuery["customerId"] = new ObjectId(req.customer.customerId)
+
+    const result = await accountService.getUpiAccounts(filterQuery);
 
     return res.status(httpStatus.status.OK).json({
         success: true,
@@ -74,8 +83,8 @@ const getUpiAccounts = async (req, res) => {
     });
 
 }
-const updateUpiAccount = async(req,res)=>{
-        const customerId = req.customer.customerId;
+const updateUpiAccount = async (req, res) => {
+    const customerId = req.customer.customerId;
     const accountId = req.query.id;
 
     const result = await accountService.updateUpiAccount(

@@ -152,7 +152,7 @@ const placeBet = async (customerId, payload) => {
             balanceAfter,
             referenceType: "betItem",
             referenceId: item._id,
-            txnId:  `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
+            txnId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
 
         }));
 
@@ -176,13 +176,13 @@ const placeBet = async (customerId, payload) => {
 
     }
 };
-const getBetHistory = async (customerId) => {
+const getBetHistory = async (filterQuery) => {
 
     try {
         return await BetSlip.aggregate(
             [
                 {
-                    '$match': {}
+                    '$match': filterQuery
                 }, {
                     '$lookup': {
                         'from': 'betitems',
