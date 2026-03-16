@@ -3,79 +3,49 @@ const catchAsync = require('../../utils/catchAsync');
 const { resultService } = require('../../services/index')
 
 const declareOpenResult = catchAsync(async (req, res) => {
-    try {
 
-        const { marketId, date, openPanna } = req.body;
+    const result = await resultService.declareOpenResult(
+        req.body,
+        "69ae7796bca0a2ddab073fdf"
+    );
 
-        if (!marketId || !date || !openPanna) {
-            return res.status(httpStatus.status.BAD_REQUEST).json({
-                message: 'marketId, date and openPanna required'
-            });
-        }
-
-        if (!/^[0-9]{3}$/.test(openPanna)) {
-            return res.status(httpStatus.status.BAD_REQUEST).json({
-                message: 'Invalid open panna'
-            });
-        }
-
-        const result = await resultService.declareOpenResult({
-            marketId,
-            date,
-            openPanna
-        });
-
-        res.status(httpStatus.status.OK).json({
-            message: 'Open result declared successfully',
-            data: result
-        });
-
-    } catch (error) {
-
-        res.status(httpStatus.status.BAD_REQUEST).json({
-            message: error.message
-        });
-
-    }
+    res.status(httpStatus.status.OK).send({
+        success: true,
+        message: "Open result declared successfully",
+        data: result
+    });
 });
-const declareCloseResult = async (req, res) => {
-    try {
 
-        const { marketId, date, closePanna } = req.body;
+const declareCloseResult = catchAsync(async (req, res) => {
 
-        if (!marketId || !date || !closePanna) {
-            return res.status(httpStatus.status.BAD_REQUEST).json({
-                message: 'marketId, date and closePanna required'
-            });
-        }
+    const result = await resultService.declareCloseResult(
+        req.body,
+        "69ae7796bca0a2ddab073fdf"
+    );
 
-        if (!/^[0-9]{3}$/.test(closePanna)) {
-            return res.status(httpStatus.status.BAD_REQUEST).json({
-                message: 'Invalid close panna'
-            });
-        }
+    res.status(httpStatus.status.OK).send({
+        success: true,
+        message: "Close result declared successfully",
+        data: result
+    });
+});
 
-        const result = await resultService.declareCloseResult({
-            marketId,
-            date,
-            closePanna
-        });
+const cancelMarket = catchAsync(async (req, res) => {
 
-        res.status(httpStatus.status.OK).json({
-            message: 'Close result declared successfully',
-            data: result
-        });
+    const result = await resultService.cancelMarket(
+        req.body,
+        req.admin.id
+    );
 
-    } catch (error) {
-
-        res.status(httpStatus.status.BAD_REQUEST).json({
-            message: error.message
-        });
-
-    }
-};
+    res.status(httpStatus.OK).send({
+        success: true,
+        message: "Market cancelled and refunds processed",
+        data: result
+    });
+});
 
 module.exports = {
     declareOpenResult,
-    declareCloseResult
-}
+    declareCloseResult,
+    cancelMarket
+};

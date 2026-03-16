@@ -47,6 +47,7 @@ const placeBet = async (customerId, payload) => {
             })
             .populate("betTypeId");
 
+
         if (!marketBetType) {
             throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid market bet type");
         }
@@ -136,7 +137,8 @@ const placeBet = async (customerId, payload) => {
             digit: b.digit,
             amount: b.amount,
             rate,
-            potentialWin: b.amount * rate
+            potentialWin: b.amount * rate,
+            payout: betType.payout
         }));
 
         const insertedItems = await BetItem.insertMany(betItems, { session });

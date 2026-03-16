@@ -6,10 +6,13 @@ const { resultController } = require('../../controllers/admin/index');
 // // All routes require authentication
 // router.use(auth());
 
-// Get today's status
-router.post('/open', resultController.declareOpenResult);
-router.post('/close', resultController.declareCloseResult);
 
 
+
+router.post("/open", resultController.declareOpenResult);
+
+router.post("/close", resultController.declareCloseResult);
+
+router.post("/cancel-market", resultController.cancelMarket);
 
 module.exports = router;
