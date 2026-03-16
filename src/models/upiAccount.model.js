@@ -38,7 +38,6 @@ const customerUpiAccountSchema = new mongoose.Schema(
     // 🛡️ ADMIN AUDIT
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
       default: null
     },
 

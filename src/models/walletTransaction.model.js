@@ -123,7 +123,6 @@ const walletTransactionSchema = new mongoose.Schema(
     // admin info
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin"
     },
 
     note: String,

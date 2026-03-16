@@ -41,7 +41,6 @@ const resultSchema = new mongoose.Schema(
 
     declaredBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin"
     }
   },
   {

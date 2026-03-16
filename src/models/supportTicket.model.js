@@ -55,7 +55,6 @@ const supportTicketSchema = new mongoose.Schema({
 
     closedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Admin"
     },
 
     closedAt: {

@@ -74,12 +74,10 @@ const marketSchema = new mongoose.Schema(
     // 🔹 AUDIT
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin"
     },
 
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin"
     }
   },
   {
