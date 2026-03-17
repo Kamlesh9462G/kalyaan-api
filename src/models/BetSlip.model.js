@@ -21,12 +21,6 @@ const betSlipSchema = new mongoose.Schema(
       required: true
     },
 
-    session: {
-      type: String,
-      enum: ["open", "close"],
-      required: true
-    },
-
     totalAmount: {
       type: Number,
       required: true

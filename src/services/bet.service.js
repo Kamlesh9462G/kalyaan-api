@@ -14,39 +14,26 @@ const {
 const ApiError = require("../utils/ApiError");
 
 const placeBet = async (customerId, payload) => {
-    console.log("Placing bet for customer:", customerId, "with payload:", payload);
-
-
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-
         const { marketId, marketBetTypeId, session: betSession, bets } = payload;
 
-        console.log("Market ID:", marketId);
-        console.log("Market Bet Type ID:", marketBetTypeId);
-        console.log("Bet Session:", betSession);
-        console.log("Bets:", bets);
         if (!bets || !bets.length) {
             throw new ApiError(httpStatus.status.BAD_REQUEST, "No bets provided");
         }
 
-        // 1️⃣ Validate Market
+        // 1️⃣ Market Validation
         const market = await Market.findById(marketId);
-
         if (!market || market.isDeleted || market.status !== "active") {
             throw new ApiError(httpStatus.status.BAD_REQUEST, "Market not active");
         }
 
-        // 2️⃣ Validate MarketBetType
+        // 2️⃣ MarketBetType Validation
         const marketBetType = await MarketBetType
-            .findOne({
-                _id: marketBetTypeId,
-                marketId,
-            })
+            .findOne({ _id: marketBetTypeId, marketId })
             .populate("betTypeId");
-
 
         if (!marketBetType) {
             throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid market bet type");
@@ -54,96 +41,150 @@ const placeBet = async (customerId, payload) => {
 
         const betType = marketBetType.betTypeId;
 
-        // 3️⃣ Validate Session
-        if (!marketBetType.sessions[betSession]?.enabled) {
-            throw new ApiError(httpStatus.status.BAD_REQUEST, "Session disabled");
+        const betTypeCode = betType.code; // IMPORTANT (add code in BetType)
+
+
+        // 3️⃣ Session Validation (skip for sangam)
+        if (!["HALF_SANGAM", "FULL_SANGAM","JODI"].includes(betTypeCode)) {
+            if (!betSession) {
+                throw new ApiError(httpStatus.status.BAD_REQUEST, "Session required");
+            }
+
+            if (!marketBetType.sessions[betSession]?.enabled) {
+                throw new ApiError(httpStatus.status.BAD_REQUEST, "Session disabled");
+            }
         }
 
-        // // 4️⃣ Fetch Bet Rate
-        // const rateDoc = await BetRate.findOne({
-        //   marketId,
-        //   betTypeId: betType._id
-        // });
-
-        // if (!rateDoc) {
-        //   throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet rate not configured");
-        // }
-
-        // const rate = rateDoc[betSession]?.payout;
-
-        // if (!rate) {
-        //   throw new ApiError(httpStatus.status.BAD_REQUEST, "Rate not configured for session");
-        // }
-
-        let rate = 10;
-
-        // 5️⃣ Validate Digits
         let totalAmount = 0;
+        let preparedItems = [];
 
-        bets.forEach(b => {
+        // 4️⃣ Validate Each Bet
+        for (const b of bets) {
 
-            if (!b.digit) {
-                throw new ApiError(httpStatus.status.BAD_REQUEST, "Digit required");
+            let item = {
+                customerId,
+                marketId,
+                marketBetTypeId,
+                betTypeCode,
+                amount: b.amount,
+                payout: betType.payout
+            };
+
+            if (!b.amount || b.amount <= 0) {
+                throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid amount");
             }
 
-            if (b.digit.length !== betType.digitConfig.digitLength) {
-                throw new ApiError(httpStatus.status.BAD_REQUEST, `Invalid digit ${b.digit}`);
+            // 🔥 SINGLE / JODI / PANNA
+            if (["SINGLE", "JODI", "SINGLE_PANNA", "DOUBLE_PANNA", "TRIPPLE_PANNA"].includes(betTypeCode)) {
+
+                if (!b.digit) {
+                    throw new ApiError(httpStatus.status.BAD_REQUEST, "Digit required");
+                }
+
+                if (b.digit.length !== betType.digitConfig.digitLength) {
+                    throw new ApiError(httpStatus.status.BAD_REQUEST, `Invalid digit ${b.digit}`);
+                }
+
+                item.digit = b.digit;
+                item.session = betSession;
             }
 
-            if (b.amount <= 0) {
-                throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid bet amount");
+            // 🔥 HALF SANGAM
+            else if (betTypeCode === "HALF_SANGAM") {
+
+                if (b.openDigit && b.closePanna) {
+                    if (b.openDigit.length !== 1 || b.closePanna.length !== 3) {
+                        throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid Half Sangam format");
+                    }
+
+                    item.openDigit = b.openDigit;
+                    item.closePanna = b.closePanna;
+                    item.sangamType = "openDigit_closePanna";
+                }
+
+                else if (b.openPanna && b.closeDigit) {
+                    if (b.openPanna.length !== 3 || b.closeDigit.length !== 1) {
+                        throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid Half Sangam format");
+                    }
+
+                    item.openPanna = b.openPanna;
+                    item.closeDigit = b.closeDigit;
+                    item.sangamType = "openPanna_closeDigit";
+                }
+
+                else {
+                    throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid Half Sangam input");
+                }
+
+                item.session = null;
+            }
+
+            // 🔥 FULL SANGAM
+            else if (betTypeCode === "FULL_SANGAM") {
+
+                if (!b.openPanna || !b.closePanna) {
+                    throw new ApiError(httpStatus.status.BAD_REQUEST, "Full Sangam requires both pannas");
+                }
+
+                if (b.openPanna.length !== 3 || b.closePanna.length !== 3) {
+                    throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid Full Sangam format");
+                }
+
+                item.openPanna = b.openPanna;
+                item.closePanna = b.closePanna;
+                item.sangamType = "full";
+                item.session = null;
+            }
+
+            else {
+                throw new ApiError(httpStatus.status.BAD_REQUEST, "Unsupported bet type");
             }
 
             totalAmount += b.amount;
 
-        });
+            // 🔥 WIN CALCULATION
+            item.possibleWinAmount =
+                (b.amount / 10) *
+                betType.payout.amount *
+                betType.payout.multiplier;
 
-        // 6️⃣ Wallet Check
-        const wallet = await Wallet
-            .findOne({ customerId })
-            .session(session);
+            preparedItems.push(item);
+        }
+
+        // 5️⃣ Wallet Check
+        const wallet = await Wallet.findOne({ customerId }).session(session);
 
         if (!wallet || wallet.balance < totalAmount) {
-            throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient wallet balance");
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient balance");
         }
 
         const balanceBefore = wallet.balance;
-        const balanceAfter = balanceBefore - totalAmount;
+        wallet.balance -= totalAmount;
+        const balanceAfter = wallet.balance;
 
-        wallet.balance = balanceAfter;
         await wallet.save({ session });
 
-        // 7️⃣ Create BetSlip
-        const betSlip = await BetSlip.create(
-            [{
-                customerId,
-                marketId,
-                betTypeId: betType._id,
-                marketBetTypeId,
-                session: betSession,
-                totalAmount,
-                status: "placed"
-            }],
-            { session }
-        );
+        // 6️⃣ Create BetSlip
+        const betSlip = await BetSlip.create([{
+            customerId,
+            marketId,
+            betTypeId: betType._id,
+            marketBetTypeId,
+            totalAmount,
+            status: "placed"
+        }], { session });
 
         const slipId = betSlip[0]._id;
 
-        // 8️⃣ Create BetItems
-        const betItems = bets.map(b => ({
-            customerId,
-            betSlipId: slipId,
-            marketBetTypeId,
-            digit: b.digit,
-            amount: b.amount,
-            rate,
-            potentialWin: b.amount * rate,
-            payout: betType.payout
+        // 7️⃣ Attach Slip ID
+        preparedItems = preparedItems.map(item => ({
+            ...item,
+            betSlipId: slipId
         }));
 
-        const insertedItems = await BetItem.insertMany(betItems, { session });
+        const insertedItems = await BetItem.insertMany(preparedItems, { session });
 
-        // 9️⃣ Wallet Transactions (per item)
+        // 8️⃣ Wallet Transactions
         const walletTxns = insertedItems.map(item => ({
             customerId,
             walletId: wallet._id,
@@ -154,8 +195,7 @@ const placeBet = async (customerId, payload) => {
             balanceAfter,
             referenceType: "betItem",
             referenceId: item._id,
-            txnId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
-
+            txnId: `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`
         }));
 
         await WalletTransaction.insertMany(walletTxns, { session });
@@ -166,16 +206,14 @@ const placeBet = async (customerId, payload) => {
         return {
             betSlipId: slipId,
             totalAmount,
-            totalBets: bets.length,
+            totalBets: preparedItems.length,
             walletBalance: balanceAfter
         };
 
     } catch (error) {
-
         await session.abortTransaction();
         session.endSession();
         throw error;
-
     }
 };
 const getBetHistory = async (filterQuery) => {
