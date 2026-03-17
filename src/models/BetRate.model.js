@@ -21,8 +21,8 @@ const betRateSchema = new mongoose.Schema(
     // 🔹 SESSION (some games only open)
     session: {
       type: String,
-      enum: ["open", "close", "both"],
-      default: "both"
+      enum: ["open", "close", "both", null],
+      default: null
     },
 
     description: {
