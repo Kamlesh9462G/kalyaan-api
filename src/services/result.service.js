@@ -4,26 +4,124 @@ const { Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType } = require
 const ApiError = require('../utils/ApiError');
 
 /**
- * Settle open session bets
+ * Calculate digit from panna (sum of digits % 10)
+ */
+const calculateDigit = (panna) => {
+    const sum = panna.split("").reduce((a, b) => a + Number(b), 0);
+    return String(sum % 10);
+};
+
+/**
+ * Check if a bet item is a winner for Half Sangam
+ */
+const isHalfSangamWinner = (betItem, openDigit, openPanna, closeDigit, closePanna) => {
+    if (betItem.sangamType === 'openDigit_closePanna') {
+        // Case A: Open Digit + Close Panna
+        return betItem.openDigit === openDigit && betItem.closePanna === closePanna;
+    } else if (betItem.sangamType === 'openPanna_closeDigit') {
+        // Case B: Open Panna + Close Digit
+        return betItem.openPanna === openPanna && betItem.closeDigit === closeDigit;
+    }
+    return false;
+};
+
+/**
+ * Check if a bet item is a winner for Full Sangam
+ */
+const isFullSangamWinner = (betItem, openPanna, closePanna) => {
+    return betItem.openPanna === openPanna && betItem.closePanna === closePanna;
+};
+
+/**
+ * Check if a bet item is a winner for Jodi
+ */
+const isJodiWinner = (betItem, openDigit, closeDigit) => {
+    const jodi = `${openDigit}${closeDigit}`;
+    return betItem.digit === jodi;
+};
+
+/**
+ * Check if a bet item is a winner based on bet type code
+ */
+const isWinner = (betItem, result) => {
+    const { openDigit, openPanna, closeDigit, closePanna } = result;
+    const betTypeCode = betItem.betTypeCode;
+
+    switch (betTypeCode) {
+        case 'SINGLE':
+            // Single digit betting (open session only)
+            return betItem.digit === openDigit;
+
+        case 'JODI':
+            // Jodi betting (needs close result) - no session
+            return isJodiWinner(betItem, openDigit, closeDigit);
+
+        case 'SINGLE_PANNA':
+        case 'DOUBLE_PANNA':
+        case 'TRIPLE_PANNA':
+            // Panna betting (open session only)
+            return betItem.digit === openPanna;
+
+        case 'HALF_SANGAM':
+            // Half Sangam (needs close result) - no session
+            return isHalfSangamWinner(betItem, openDigit, openPanna, closeDigit, closePanna);
+
+        case 'FULL_SANGAM':
+            // Full Sangam (needs close result) - no session
+            return isFullSangamWinner(betItem, openPanna, closePanna);
+
+        default:
+            return false;
+    }
+};
+
+/**
+ * Get the appropriate result based on bet type
+ */
+const getResultForBetType = (betTypeCode, result) => {
+    const { openDigit, openPanna, closeDigit, closePanna } = result;
+
+    switch (betTypeCode) {
+        case 'SINGLE':
+            return openDigit;
+        case 'JODI':
+            return `${openDigit}${closeDigit}`;
+        case 'SINGLE_PANNA':
+        case 'DOUBLE_PANNA':
+        case 'TRIPLE_PANNA':
+            return openPanna;
+        case 'HALF_SANGAM':
+        case 'FULL_SANGAM':
+            return `${openPanna}-${closePanna}`;
+        default:
+            return '';
+    }
+};
+
+/**
+ * Get bet type category from bet type code
+ */
+const getBetTypeCategory = (betTypeCode) => {
+    if (betTypeCode === 'SINGLE') return 'digit';
+    if (betTypeCode === 'JODI') return 'jodi';
+    if (['SINGLE_PANNA', 'DOUBLE_PANNA', 'TRIPLE_PANNA'].includes(betTypeCode)) return 'panna';
+    if (betTypeCode === 'HALF_SANGAM') return 'half_sangam';
+    if (betTypeCode === 'FULL_SANGAM') return 'full_sangam';
+    return 'unknown';
+};
+
+/**
+ * Settle open session bets (Single, Single Panna, Double Panna, Triple Panna)
  */
 const settleOpenBets = async (result, session, req) => {
     const { marketId, openDigit, openPanna } = result;
 
-    // First find all bet slips for this market and open session
-    const betSlips = await BetSlip.find({
+    // Find all bet items for this market that need open result
+    const betItems = await BetItem.find({
         marketId,
         session: "open",
-        status: "placed"
-    }).select('_id').session(session);
-
-    const betSlipIds = betSlips.map(slip => slip._id);
-
-    if (betSlipIds.length === 0) return;
-
-    // Find all pending bet items for these bet slips
-    const betItems = await BetItem.find({
-        betSlipId: { $in: betSlipIds },
-        status: "pending"
+        status: "pending",
+        betTypeCode: { $in: ['SINGLE', 'SINGLE_PANNA', 'DOUBLE_PANNA', 'TRIPLE_PANNA'] }
     }).populate({
         path: 'betSlipId',
         populate: {
@@ -35,56 +133,37 @@ const settleOpenBets = async (result, session, req) => {
     if (betItems.length === 0) return;
 
     // Group by customer for wallet updates
-    const customerWins = new Map(); // customerId -> { totalWinAmount: 0, transactions: [] }
+    const customerWins = new Map();
     const betUpdates = [];
-    const betSlipStatusMap = new Map(); // betSlipId -> { hasWon: boolean }
+    const betSlipStatusMap = new Map();
 
     for (const betItem of betItems) {
         const betSlip = betItem.betSlipId;
-        const betType = betSlip.betTypeId;
+        if (!betSlip) continue;
 
-        let isWin = false;
+        const betTypeCode = betItem.betTypeCode;
 
-        // Determine win based on bet type category
-        switch (betType.category) {
-            case "digit":
-                // Single digit betting (0-9)
-                isWin = betItem.digit === openDigit;
-                break;
-
-            case "panna":
-                // Panna betting (3-digit numbers)
-                // Check pattern from betType
-                if (betType.pattern === "SINGLE_PANNA" ||
-                    betType.pattern === "DOUBLE_PANNA" ||
-                    betType.pattern === "TRIPLE_PANNA") {
-                    isWin = betItem.digit === openPanna;
-                }
-                break;
-
-            default:
-                // Other bet types might not be valid for open session
-                isWin = false;
-        }
+        const isWin = isWinner(betItem, result);
 
         if (isWin) {
-            console.log(betItem.possibleWinAmount)
-            console.log(betItem.amount)
-            console.log(betItem.payout.amount)
-            console.log(betItem.payout.multiplier)
+            console.log('Winning open bet:', {
+                betItemId: betItem._id,
+                betTypeCode,
+                amount: betItem.amount,
+                possibleWinAmount: betItem.possibleWinAmount,
+                payout: betItem.payout
+            });
 
-
-            // Calculate win amount (already stored in possibleWinAmount from pre-save)
             const winAmount = betItem.possibleWinAmount ||
                 (betItem.amount / 10) * betItem.payout.amount * betItem.payout.multiplier;
 
-            console.log(winAmount)
-            // Track customer win total and store bet item reference for transaction
+            console.log('Win amount:', winAmount);
+
             const customerId = betItem.customerId.toString();
             if (!customerWins.has(customerId)) {
                 customerWins.set(customerId, {
                     totalWinAmount: 0,
-                    betItems: [] // Store winning bet items for this customer
+                    betItems: []
                 });
             }
             const customerData = customerWins.get(customerId);
@@ -93,10 +172,10 @@ const settleOpenBets = async (result, session, req) => {
                 betItemId: betItem._id,
                 winAmount: winAmount,
                 digit: betItem.digit,
-                amount: betItem.amount
+                amount: betItem.amount,
+                betTypeCode
             });
 
-            // Update bet item to won
             betUpdates.push({
                 updateOne: {
                     filter: { _id: betItem._id },
@@ -108,13 +187,11 @@ const settleOpenBets = async (result, session, req) => {
                 }
             });
 
-            // Track bet slip for status update
             betSlipStatusMap.set(betSlip._id.toString(), {
                 betSlipId: betSlip._id,
                 hasWon: true
             });
         } else {
-            // Update bet item to lost
             betUpdates.push({
                 updateOne: {
                     filter: { _id: betItem._id },
@@ -129,7 +206,6 @@ const settleOpenBets = async (result, session, req) => {
 
     // Process wallet updates and transactions for winners
     if (customerWins.size > 0) {
-        // Get all wallets for winning customers
         const customerIds = Array.from(customerWins.keys());
         const wallets = await Wallet.find({
             customerId: { $in: customerIds }
@@ -138,7 +214,6 @@ const settleOpenBets = async (result, session, req) => {
         const walletMap = new Map();
         wallets.forEach(w => walletMap.set(w.customerId.toString(), w));
 
-        // Prepare wallet updates and transactions
         const walletUpdates = [];
         const transactions = [];
 
@@ -147,7 +222,6 @@ const settleOpenBets = async (result, session, req) => {
 
             if (!wallet) continue;
 
-            // Wallet balance update
             walletUpdates.push({
                 updateOne: {
                     filter: { _id: wallet._id },
@@ -158,35 +232,14 @@ const settleOpenBets = async (result, session, req) => {
                 }
             });
 
-            // Create a transaction record for this customer's total win
-            // You can either create one transaction for total win or multiple transactions per bet item
-            // Here I'm creating one transaction for total win with reference to first bet item
             const firstBetItem = customerData.betItems[0];
 
-            console.log({
-                customerId: new mongoose.Types.ObjectId(customerId),
-                walletId: wallet._id,
-                type: "credit",
-                reason: "bet_won",
+            console.log('Creating transaction:', {
+                customerId,
                 amount: customerData.totalWinAmount,
-                balanceBefore: wallet.balance,
-                balanceAfter: wallet.balance + customerData.totalWinAmount,
-                referenceType: "betItem",
-                referenceId: firstBetItem.betItemId,
-                status: "success",
-                txnId: `WIN${Date.now()}${Math.random().toString(36).substr(2, 9)}`.toUpperCase(),
-                meta: {
-                    note: `Open result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
-                    // ip: req.ip,
-                    marketId: marketId.toString(),
-                    result: `${openPanna}-${openDigit}`,
-                    winningBets: customerData.betItems.map(b => ({
-                        betItemId: b.betItemId,
-                        winAmount: b.winAmount,
-                        digit: b.digit
-                    }))
-                }
-            })
+                walletBalance: wallet.balance
+            });
+
             transactions.push({
                 customerId: new mongoose.Types.ObjectId(customerId),
                 walletId: wallet._id,
@@ -201,24 +254,22 @@ const settleOpenBets = async (result, session, req) => {
                 txnId: `WIN${Date.now()}${Math.random().toString(36).substr(2, 9)}`.toUpperCase(),
                 meta: {
                     note: `Open result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
-                    // ip: req.ip,
                     marketId: marketId.toString(),
                     result: `${openPanna}-${openDigit}`,
                     winningBets: customerData.betItems.map(b => ({
                         betItemId: b.betItemId,
                         winAmount: b.winAmount,
-                        digit: b.digit
+                        digit: b.digit,
+                        betTypeCode: b.betTypeCode
                     }))
                 }
             });
         }
 
-        // Execute wallet updates
         if (walletUpdates.length > 0) {
             await Wallet.bulkWrite(walletUpdates, { session });
         }
 
-        // Create transaction records
         if (transactions.length > 0) {
             await WalletTransaction.insertMany(transactions, { session });
         }
@@ -231,7 +282,6 @@ const settleOpenBets = async (result, session, req) => {
 
     // Update bet slip statuses for those with wins
     for (const [betSlipId, data] of betSlipStatusMap) {
-        // Check if all items in this bet slip are settled
         const items = await BetItem.find({ betSlipId }).session(session);
         const allSettled = items.every(item => item.status !== "pending");
 
@@ -245,23 +295,31 @@ const settleOpenBets = async (result, session, req) => {
         }
     }
 
-    // Update bet slips that have all items lost (no wins tracked)
-    const allBetSlips = await BetSlip.find({
-        _id: { $in: betSlipIds },
-        status: "placed"
-    }).session(session);
+    // Update remaining bet slips - FIXED: Extract IDs properly
+    const allBetSlipIds = betItems
+        .map(item => item.betSlipId?._id?.toString())
+        .filter(id => id);
 
-    for (const betSlip of allBetSlips) {
-        if (!betSlipStatusMap.has(betSlip._id.toString())) {
-            const items = await BetItem.find({ betSlipId: betSlip._id }).session(session);
-            const allSettled = items.every(item => item.status !== "pending");
+    const uniqueBetSlipIds = [...new Set(allBetSlipIds)];
 
-            if (allSettled) {
-                await BetSlip.updateOne(
-                    { _id: betSlip._id },
-                    { status: "lost" },
-                    { session }
-                );
+    if (uniqueBetSlipIds.length > 0) {
+        const allBetSlips = await BetSlip.find({
+            _id: { $in: uniqueBetSlipIds },
+            status: "placed"
+        }).session(session);
+
+        for (const betSlip of allBetSlips) {
+            if (!betSlipStatusMap.has(betSlip._id.toString())) {
+                const items = await BetItem.find({ betSlipId: betSlip._id }).session(session);
+                const allSettled = items.every(item => item.status !== "pending");
+
+                if (allSettled) {
+                    await BetSlip.updateOne(
+                        { _id: betSlip._id },
+                        { status: "lost" },
+                        { session }
+                    );
+                }
             }
         }
     }
@@ -273,20 +331,20 @@ const settleOpenBets = async (result, session, req) => {
 const settleCloseBets = async (result, session, req) => {
     const { marketId, closeDigit, closePanna, openDigit, openPanna } = result;
 
-    // Find all bet slips for this market
-    const betSlips = await BetSlip.find({
-        marketId,
-        status: "placed"
-    }).select('_id session betTypeId').populate('betTypeId').session(session);
-
-    const betSlipIds = betSlips.map(slip => slip._id);
-
-    if (betSlipIds.length === 0) return;
-
-    // Find all pending bet items
+    // Find all bet items for this market that need close result
+    // These include:
+    // 1. Bet items with session = "close" (close session bets)
+    // 2. Bet items with betTypeCode = 'JODI', 'HALF_SANGAM', 'FULL_SANGAM' (no session)
     const betItems = await BetItem.find({
-        betSlipId: { $in: betSlipIds },
-        status: "pending"
+        marketId,
+        status: "pending",
+        $or: [
+            { session: "close" },
+            { 
+                session: null,
+                betTypeCode: { $in: ['JODI', 'HALF_SANGAM', 'FULL_SANGAM'] }
+            }
+        ]
     }).populate({
         path: 'betSlipId',
         populate: {
@@ -295,89 +353,30 @@ const settleCloseBets = async (result, session, req) => {
         }
     }).session(session);
 
-    // Create a map of bet slip data for quick access
-    const betSlipMap = new Map();
-    betSlips.forEach(slip => {
-        betSlipMap.set(slip._id.toString(), slip);
-    });
-
-    // Filter items that need to be settled now:
-    // 1. Close session bets
-    // 2. Jodi bets (category: "jodi")
-    // 3. Sangam bets (category: "sangam")
-    const itemsToSettle = betItems.filter(item => {
-        const betSlip = item.betSlipId;
-        if (!betSlip) return false;
-
-        const betType = betSlip.betTypeId;
-
-        // Close session bets
-        if (betSlip.session === "close") return true;
-
-        // Jodi and Sangam bets (need close result)
-        if (betType && (betType.category === "jodi" || betType.category === "sangam")) return true;
-
-        return false;
-    });
-
-    if (itemsToSettle.length === 0) return;
+    console.log(betItems)
+    if (betItems.length === 0) return;
 
     // Group by customer for wallet updates
     const customerWins = new Map(); // customerId -> { totalWinAmount: 0, betItems: [] }
     const betUpdates = [];
     const betSlipStatusMap = new Map();
 
-    for (const betItem of itemsToSettle) {
+    for (const betItem of betItems) {
         const betSlip = betItem.betSlipId;
-        const betType = betSlip.betTypeId;
+        if (!betSlip) continue; // Skip if betSlip is not populated
 
-        let isWin = false;
+        const betTypeCode = betItem.betTypeCode;
 
-        // Determine win based on bet type category and session
-        switch (betType.category) {
-            case "digit":
-                // Close digit betting
-                if (betSlip.session === "close") {
-                    isWin = betItem.digit === closeDigit;
-                }
-                break;
-
-            case "panna":
-                // Close panna betting
-                if (betSlip.session === "close") {
-                    if (betType.pattern === "SINGLE_PANNA" ||
-                        betType.pattern === "DOUBLE_PANNA" ||
-                        betType.pattern === "TRIPLE_PANNA") {
-                        isWin = betItem.digit === closePanna;
-                    }
-                }
-                break;
-
-            case "jodi":
-                // Jodi is combination of open and close digits
-                if (betType.category === "jodi") {
-                    const jodi = `${openDigit}${closeDigit}`;
-                    isWin = betItem.digit === jodi;
-                }
-                break;
-
-            case "sangam":
-                if (betType.pattern === "HALF_SANGAM") {
-                    // Half Sangam: open digit + close panna
-                    const [digit, panna] = betItem.digit.split('-');
-                    isWin = digit === openDigit && panna === closePanna;
-                } else if (betType.pattern === "FULL_SANGAM") {
-                    // Full Sangam: open panna + close panna
-                    const [open, close] = betItem.digit.split('-');
-                    isWin = open === openPanna && close === closePanna;
-                }
-                break;
-
-            default:
-                isWin = false;
-        }
+        const isWin = isWinner(betItem, result);
 
         if (isWin) {
+            console.log('Winning close bet:', {
+                betItemId: betItem._id,
+                betTypeCode,
+                amount: betItem.amount,
+                possibleWinAmount: betItem.possibleWinAmount
+            });
+
             const winAmount = betItem.possibleWinAmount ||
                 (betItem.amount / 10) * betItem.payout.amount * betItem.payout.multiplier;
 
@@ -394,9 +393,13 @@ const settleCloseBets = async (result, session, req) => {
                 betItemId: betItem._id,
                 winAmount: winAmount,
                 digit: betItem.digit,
+                openDigit: betItem.openDigit,
+                closeDigit: betItem.closeDigit,
+                openPanna: betItem.openPanna,
+                closePanna: betItem.closePanna,
                 amount: betItem.amount,
-                betType: betType.category,
-                pattern: betType.pattern
+                betTypeCode,
+                sangamType: betItem.sangamType
             });
 
             betUpdates.push({
@@ -471,15 +474,18 @@ const settleCloseBets = async (result, session, req) => {
                 txnId: `WIN${Date.now()}${Math.random().toString(36).substr(2, 9)}`.toUpperCase(),
                 meta: {
                     note: `Close result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
-                    // ip: req?.ip,
                     marketId: marketId.toString(),
                     result: `${closePanna}-${closeDigit}`,
                     winningBets: customerData.betItems.map(b => ({
                         betItemId: b.betItemId,
                         winAmount: b.winAmount,
                         digit: b.digit,
-                        betType: b.betType,
-                        pattern: b.pattern
+                        openDigit: b.openDigit,
+                        closeDigit: b.closeDigit,
+                        openPanna: b.openPanna,
+                        closePanna: b.closePanna,
+                        betTypeCode: b.betTypeCode,
+                        sangamType: b.sangamType
                     }))
                 }
             });
@@ -514,23 +520,31 @@ const settleCloseBets = async (result, session, req) => {
         }
     }
 
-    // Update remaining bet slips
-    const allBetSlips = await BetSlip.find({
-        _id: { $in: betSlipIds },
-        status: "placed"
-    }).session(session);
+    // Update remaining bet slips - FIXED: Extract IDs properly
+    const allBetSlipIds = betItems
+        .map(item => item.betSlipId?._id?.toString())
+        .filter(id => id); // Remove undefined/null values
 
-    for (const betSlip of allBetSlips) {
-        if (!betSlipStatusMap.has(betSlip._id.toString())) {
-            const items = await BetItem.find({ betSlipId: betSlip._id }).session(session);
-            const allSettled = items.every(item => item.status !== "pending");
+    const uniqueBetSlipIds = [...new Set(allBetSlipIds)];
 
-            if (allSettled) {
-                await BetSlip.updateOne(
-                    { _id: betSlip._id },
-                    { status: "lost" },
-                    { session }
-                );
+    if (uniqueBetSlipIds.length > 0) {
+        const allBetSlips = await BetSlip.find({
+            _id: { $in: uniqueBetSlipIds },
+            status: "placed"
+        }).session(session);
+
+        for (const betSlip of allBetSlips) {
+            if (!betSlipStatusMap.has(betSlip._id.toString())) {
+                const items = await BetItem.find({ betSlipId: betSlip._id }).session(session);
+                const allSettled = items.every(item => item.status !== "pending");
+
+                if (allSettled) {
+                    await BetSlip.updateOne(
+                        { _id: betSlip._id },
+                        { status: "lost" },
+                        { session }
+                    );
+                }
             }
         }
     }
@@ -550,34 +564,16 @@ const cancelMarket = async (payload, adminId, req) => {
         const result = await Result.findOneAndUpdate(
             { marketId, date },
             {
-                status: "completed",
-                declaredBy: adminId
+                status: "cancelled",
+                cancelledBy: adminId,
+                cancelledAt: new Date()
             },
             { session, new: true }
         );
 
-        // Find all placed bet slips for this market
-        const betSlips = await BetSlip.find({
-            marketId,
-            status: "placed"
-        }).select('_id').session(session);
-
-        const betSlipIds = betSlips.map(slip => slip._id);
-
-        if (betSlipIds.length === 0) {
-            await session.commitTransaction();
-            session.endSession();
-            return {
-                success: true,
-                message: "No pending bets to refund",
-                refundedCount: 0,
-                totalRefundAmount: 0
-            };
-        }
-
-        // Find all pending bet items
+        // Find all pending bet items for this market
         const betItems = await BetItem.find({
-            betSlipId: { $in: betSlipIds },
+            marketId,
             status: "pending"
         }).populate('betSlipId').session(session);
 
@@ -591,6 +587,9 @@ const cancelMarket = async (payload, adminId, req) => {
                 totalRefundAmount: 0
             };
         }
+
+        // Get unique bet slip IDs
+        const betSlipIds = [...new Set(betItems.map(item => item.betSlipId.toString()))];
 
         // Group refunds by customer
         const customerRefunds = new Map(); // customerId -> total refund amount
@@ -606,13 +605,13 @@ const cancelMarket = async (payload, adminId, req) => {
             }
             customerRefunds.set(customerId, customerRefunds.get(customerId) + refundAmount);
 
-            // Update bet item to cancelled
+            // Update bet item to refunded
             betUpdates.push({
                 updateOne: {
                     filter: { _id: betItem._id },
                     update: {
-                        status: "cancelled",
-                        resultDeclaredAt: new Date()
+                        status: "refunded",
+                        refundedAt: new Date()
                     }
                 }
             });
@@ -659,7 +658,6 @@ const cancelMarket = async (payload, adminId, req) => {
                     meta: {
                         note: `Market cancelled - Refund amount: ₹${refundAmount}`,
                         adminId: adminId,
-                        // ip: req.ip,
                         marketId: marketId
                     }
                 });
@@ -680,12 +678,14 @@ const cancelMarket = async (payload, adminId, req) => {
             await WalletTransaction.insertMany(transactions, { session });
         }
 
-        // Update all bet slips to cancelled
-        await BetSlip.updateMany(
-            { _id: { $in: betSlipIds } },
-            { status: "cancelled" },
-            { session }
-        );
+        // Update all bet slips to refunded
+        if (betSlipIds.length > 0) {
+            await BetSlip.updateMany(
+                { _id: { $in: betSlipIds } },
+                { status: "refunded" },
+                { session }
+            );
+        }
 
         await session.commitTransaction();
         session.endSession();
@@ -706,15 +706,12 @@ const cancelMarket = async (payload, adminId, req) => {
 };
 
 /**
- * Calculate digit from panna (sum of digits % 10)
- */
-const calculateDigit = (panna) => {
-    const sum = panna.split("").reduce((a, b) => a + Number(b), 0);
-    return String(sum % 10);
-};
-
-/**
  * Declare open result
+ * This settles:
+ * - Single Digit (session: "open")
+ * - Single Panna (session: "open")
+ * - Double Panna (session: "open")
+ * - Triple Panna (session: "open")
  */
 const declareOpenResult = async (payload, adminId, req) => {
     const session = await mongoose.startSession();
@@ -777,7 +774,7 @@ const declareOpenResult = async (payload, adminId, req) => {
 
         return result;
     } catch (err) {
-        console.log(err)
+        console.log(err);
         await session.abortTransaction();
         session.endSession();
         throw err;
@@ -786,6 +783,11 @@ const declareOpenResult = async (payload, adminId, req) => {
 
 /**
  * Declare close result
+ * This settles:
+ * - Close session bets (session: "close")
+ * - Jodi (no session)
+ * - Half Sangam (no session)
+ * - Full Sangam (no session)
  */
 const declareCloseResult = async (payload, adminId, req) => {
     const session = await mongoose.startSession();
@@ -846,6 +848,7 @@ const declareCloseResult = async (payload, adminId, req) => {
 
         return result;
     } catch (err) {
+        console.log(err)
         await session.abortTransaction();
         session.endSession();
         throw err;
@@ -882,5 +885,11 @@ module.exports = {
     declareOpenResult,
     declareCloseResult,
     cancelMarket,
-    getCurrentDayResult
+    getCurrentDayResult,
+    isWinner,
+    isHalfSangamWinner,
+    isFullSangamWinner,
+    isJodiWinner,
+    getResultForBetType,
+    getBetTypeCategory
 };
