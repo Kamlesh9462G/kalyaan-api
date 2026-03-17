@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { marketController } = require('../../controllers/admin/index');
+const { marketController } = require('../../controllers/admin');
 
-
-// // All routes require authentication
-// router.use(auth());
-
-// Get today's status
+// Create
 router.post('/', marketController.addMarket);
-router.get('/', marketController.getMarket);
 
+// Get all
+router.get('/', marketController.getMarketsWithResult);
 
+// Update
+router.patch('/:id', marketController.updateMarket);
+
+// Delete
+router.delete('/:id', marketController.deleteMarket);
 
 module.exports = router;

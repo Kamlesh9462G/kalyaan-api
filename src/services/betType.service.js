@@ -17,7 +17,28 @@ const getBetTypes = async (filterQuery) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
 }
+const updateBetType = async (betTypeId, updateData) => {
+    try {
+        const betType = await BetType.findByIdAndUpdate(
+            betTypeId,
+            updateData,
+            { new: true, runValidators: true }
+        );
 
+        return betType;
+    } catch (error) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
+const deleteBetType = async (betTypeId) => {
+    try {
+        const market = await BetType.findByIdAndDelete(betTypeId);
+        return market;
+    } catch (error) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+
+}
 const addBetTypeDigits = async (betTypeId, digits) => {
     try {
         const betType = await BetType.findById(betTypeId);
@@ -65,5 +86,7 @@ module.exports = {
     addBetTypeDigits,
     getBetTypeDigits,
     addBetTypeRates,
-    getBetTypeRates
+    getBetTypeRates,
+    updateBetType,
+    deleteBetType
 }

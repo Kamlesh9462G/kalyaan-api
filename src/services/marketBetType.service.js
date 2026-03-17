@@ -1,35 +1,51 @@
-
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { MarketBetType } = require('../models/index');
+const { MarketBetType, Market, BetType } = require('../models');
 
-const addMarketBetType = async (marketBetTypeData) => {
-    try {
-        return await MarketBetType.create(marketBetTypeData);
-    } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
+// ✅ CREATE
+const addMarketBetType = async (data) => {
+  try {
+    // 🔹 Validate Market
+    const marketExists = await Market.findById(data.marketId);
+    if (!marketExists) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid marketId");
     }
-}
+
+    // 🔹 Validate BetType
+    const betTypeExists = await BetType.findById(data.betTypeId);
+    if (!betTypeExists) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid betTypeId");
+    }
+
+    // 🔹 Prevent duplicate
+    const existing = await MarketBetType.findOne({
+      marketId: data.marketId,
+      betTypeId: data.betTypeId,
+      isDeleted: false
+    });
+
+    if (existing) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet type already exists for this market");
+    }
+
+    return await MarketBetType.create(data);
+
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 
 const getMarketBetType = async (filterQuery) => {
-    try {
-        return await MarketBetType.find(filterQuery);
-    } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
-
-    }
-}
-
-const getMarketBetTypes = async (marketId) => {
   try {
+    const matchStage = {
+      isDeleted: false,
+      ...filterQuery
+    };
 
     const data = await MarketBetType.aggregate([
       {
-        $match: {
-          marketId: new mongoose.Types.ObjectId(marketId),
-          isDeleted: false
-        }
+        $match: matchStage
       },
 
       // 🔹 MARKET LOOKUP
@@ -41,8 +57,12 @@ const getMarketBetTypes = async (marketId) => {
           as: "market"
         }
       },
-
-      { $unwind: "$market" },
+      {
+        $unwind: {
+          path: "$market",
+          preserveNullAndEmptyArrays: true
+        }
+      },
 
       // 🔹 BET TYPE LOOKUP
       {
@@ -53,23 +73,23 @@ const getMarketBetTypes = async (marketId) => {
           as: "betType"
         }
       },
+      {
+        $unwind: {
+          path: "$betType",
+          preserveNullAndEmptyArrays: true
+        }
+      },
 
-      { $unwind: "$betType" },
-
-      // 🔹 RESPONSE FORMAT
+      // 🔹 FINAL RESPONSE
       {
         $project: {
           _id: 1,
 
           marketId: 1,
           marketName: "$market.name",
-          marketTimings: "$market.timings",
 
           betTypeId: 1,
           betTypeName: "$betType.name",
-          digitConfig: "$betType.digitConfig",
-          description: "$betType.description",
-          
 
           sessions: 1,
           status: 1,
@@ -78,34 +98,102 @@ const getMarketBetTypes = async (marketId) => {
           updatedAt: 1
         }
       }
-
     ]);
 
     return data;
 
   } catch (error) {
     throw new ApiError(
-      httpStatus.status.INTERNAL_SERVER_ERROR,
-      error.message || "Failed to fetch market bet types"
+      httpStatus.INTERNAL_SERVER_ERROR,
+      error.message
     );
   }
 };
 
+// ✅ AGGREGATE (already good)
+const getMarketBetTypes = async (marketId) => {
+  try {
+    return await MarketBetType.aggregate([
+      {
+        $match: {
+          marketId: new mongoose.Types.ObjectId(marketId),
+          isDeleted: false
+        }
+      },
+      {
+        $lookup: {
+          from: "markets",
+          localField: "marketId",
+          foreignField: "_id",
+          as: "market"
+        }
+      },
+      { $unwind: "$market" },
+      {
+        $lookup: {
+          from: "bettypes",
+          localField: "betTypeId",
+          foreignField: "_id",
+          as: "betType"
+        }
+      },
+      { $unwind: "$betType" },
+      {
+        $project: {
+          _id: 1,
+          marketId: 1,
+          marketName: "$market.name",
+          marketTimings: "$market.timings",
+          betTypeId: 1,
+          betTypeName: "$betType.name",
+          digitConfig: "$betType.digitConfig",
+          description: "$betType.description",
+          sessions: 1,
+          status: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      }
+    ]);
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 
-const updateMarketBetType = async (filterQuery, updateData) => {
+// ✅ UPDATE
+const updateMarketBetType = async (id, updateData) => {
+  try {
+    const updated = await MarketBetType.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      updateData,
+      { new: true, runValidators: true }
+    );
 
-}
+    return updated;
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 
+// ✅ DELETE (SOFT DELETE)
+const deleteMarketBetType = async (id) => {
+  try {
+    const deleted = await MarketBetType.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      { isDeleted: true },
+      { new: true }
+    );
 
-const deleteMarketBetType = async (filterQuery) => {
-
-}
-
+    return deleted;
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 
 module.exports = {
-    addMarketBetType,
-    getMarketBetType,
-    updateMarketBetType,
-    deleteMarketBetType,
-    getMarketBetTypes
-}
+  addMarketBetType,
+  getMarketBetType,
+  getMarketBetTypes,
+  updateMarketBetType,
+  deleteMarketBetType
+};

@@ -9,6 +9,8 @@ const { betTypeController } = require('../../controllers/admin/index');
 // Get today's status
 router.post('/', betTypeController.addBetType);
 router.get('/', betTypeController.getBetTypes);
+router.patch('/:id', betTypeController.updateBetType);
+router.delete('/:id', betTypeController.deleteBetType);
 
 router.post('/:id/digits', betTypeController.addBetTypeDigits);
 router.get('/:id/digits', betTypeController.getBetTypeDigits);
