@@ -44,9 +44,10 @@ const placeBet = async (customerId, payload) => {
 
         const betTypeCode = betType.code; // IMPORTANT (add code in BetType)
 
+        console.log(betTypeCode)
 
         // 3️⃣ Session Validation (skip for sangam)
-        if (!["HALF_SANGAM", "FULL_SANGAM","JODI"].includes(betTypeCode)) {
+        if (!["HALF_SANGAM", "FULL_SANGAM", "JODI"].includes(betTypeCode)) {
             if (!betSession) {
                 throw new ApiError(httpStatus.status.BAD_REQUEST, "Session required");
             }
@@ -274,6 +275,12 @@ const getBetHistory = async (filterQuery) => {
                         'betItems': {
                             '_id': 1,
                             'digit': 1,
+                            "openDigit": 1,
+                            "closeDigit": 1,
+                            "openPanna": 1,
+                            "closePanna": 1,
+                            "sangamType": 1,
+                            "betTypeCode": 1,
                             'amount': 1,
                             'status': 1,
                             'possibleWinAmount': 1,
