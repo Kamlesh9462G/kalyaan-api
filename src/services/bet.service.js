@@ -14,6 +14,7 @@ const {
 const ApiError = require("../utils/ApiError");
 
 const placeBet = async (customerId, payload) => {
+    console.log(customerId, payload)
     const session = await mongoose.startSession();
     session.startTransaction();
 
