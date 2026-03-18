@@ -80,6 +80,32 @@ const getBetTypeRates = async (filterQuery) => {
     }
 }
 
+
+// ✅ UPDATE
+const updateBetTypeRate = async (rateId, updateData) => {
+    try {
+        const rate = await BetRate.findByIdAndUpdate(
+            rateId,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        return rate;
+    } catch (error) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+};
+
+// ✅ DELETE
+const deleteBetTypeRate = async (rateId) => {
+    try {
+        const rate = await BetRate.findByIdAndDelete(rateId);
+        return rate;
+    } catch (error) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+};
+
 module.exports = {
     addBetType,
     getBetTypes,
@@ -88,5 +114,7 @@ module.exports = {
     addBetTypeRates,
     getBetTypeRates,
     updateBetType,
-    deleteBetType
+    deleteBetType,
+    updateBetTypeRate,
+    deleteBetTypeRate
 }

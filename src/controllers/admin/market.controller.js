@@ -107,6 +107,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
             name: market.name,
             timings: market.timings,
             result: resultString,
+            createdAt:market.createdAt
         };
     });
 

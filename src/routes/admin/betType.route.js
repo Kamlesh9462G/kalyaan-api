@@ -16,6 +16,9 @@ router.post('/:id/digits', betTypeController.addBetTypeDigits);
 router.get('/:id/digits', betTypeController.getBetTypeDigits);
 
 router.post('/:id/rates', betTypeController.addBetTypeRates);
+router.patch('/:id/rates', betTypeController.updateBetTypeRate);
+router.delete('/:id/rates', betTypeController.deleteBetTypeRate);
+
 router.get('/rates', betTypeController.getBetTypeRates);
 
 

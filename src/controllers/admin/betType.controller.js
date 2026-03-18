@@ -3,7 +3,7 @@ const ApiError = require('../../utils/ApiError');
 const catchAsync = require('../../utils/catchAsync');
 const { betTypeService } = require('../../services/index');
 
-const addBetType = async (req, res) => {
+const addBetType = catchAsync(async (req, res) => {
     const betType = await betTypeService.addBetType(req.body);
     return res.status(httpStatus.status.OK).json({
         success: true,
@@ -12,8 +12,8 @@ const addBetType = async (req, res) => {
         data: betType,
     });
 
-}
-const getBetTypes = async (req, res) => {
+})
+const getBetTypes = catchAsync(async (req, res) => {
     const betTypes = await betTypeService.getBetTypes({});
     return res.status(httpStatus.status.OK).json({
         success: true,
@@ -21,8 +21,8 @@ const getBetTypes = async (req, res) => {
         message: "Bet Type fetched successfully",
         data: betTypes,
     });
-}
-const updateBetType = async (req, res) => {
+})
+const updateBetType = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     const betTypes = await betTypeService.updateBetType(id, req.body);
@@ -32,8 +32,8 @@ const updateBetType = async (req, res) => {
         message: "Bet Type updated successfully",
         data: betTypes,
     });
-}
-const deleteBetType = async (req, res) => {
+})
+const deleteBetType = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     const deletedBetType = await betTypeService.deleteBetType(id);
@@ -47,20 +47,20 @@ const deleteBetType = async (req, res) => {
         status: httpStatus.status.OK,
         message: "Bet Type deleted successfully",
     });
-}
-const addBetTypeDigits = async (req, res) => {
+})
+const addBetTypeDigits = catchAsync(async (req, res) => {
     const { id } = req.params;
     const digits = await betTypeService.addBetTypeDigits(id, req.body.digits);
     res.status(httpStatus.status.OK).send(digits);
-}
+})
 
-const getBetTypeDigits = async (req, res) => {
+const getBetTypeDigits = catchAsync(async (req, res) => {
     const { id } = req.params;
     const digits = await betTypeService.getBetTypeDigits(id);
     res.status(httpStatus.status.OK).send(digits);
-}
+})
 
-const addBetTypeRates = async (req, res) => {
+const addBetTypeRates = catchAsync(async (req, res) => {
 
     const betRate = await betTypeService.addBetTypeRates(req.body);
 
@@ -71,8 +71,8 @@ const addBetTypeRates = async (req, res) => {
         data: betRate,
     });
 
-}
-const getBetTypeRates = async (req, res) => {
+})
+const getBetTypeRates = catchAsync(async (req, res) => {
     const betRates = await betTypeService.getBetTypeRates({});
 
     return res.status(httpStatus.status.OK).json({
@@ -81,8 +81,41 @@ const getBetTypeRates = async (req, res) => {
         message: "Rates fetched successfully",
         data: betRates,
     });
-}
+})
+const updateBetTypeRate = catchAsync(async (req, res) => {
+    const { id } = req.params;
 
+    const updatedRate = await betTypeService.updateBetTypeRate(id, req.body);
+
+    if (!updatedRate) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Rate not found");
+    }
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Rate updated successfully",
+        data: updatedRate,
+    });
+
+
+})
+const deleteBetTypeRate = catchAsync(async (req, res) => {
+    const { id } = req.params;
+
+    const deletedRate = await betTypeService.deleteBetTypeRate(id);
+
+    if (!deletedRate) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Rate not found");
+    }
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Rate deleted successfully",
+    });
+
+})
 module.exports = {
     addBetType,
     getBetTypes,
@@ -91,5 +124,7 @@ module.exports = {
     addBetTypeRates,
     getBetTypeRates,
     updateBetType,
-    deleteBetType
+    deleteBetType,
+    updateBetTypeRate,
+    deleteBetTypeRate
 }
