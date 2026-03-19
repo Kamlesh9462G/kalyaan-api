@@ -9,7 +9,7 @@ const sessionSchema = new mongoose.Schema(
 
     payout: {
       amount: {
-        type: Number,       // 9 (means 10 ka 90)
+        type: Number,
         required: true
       },
       multiplier: {
@@ -23,7 +23,6 @@ const sessionSchema = new mongoose.Schema(
 
 const marketBetTypeSchema = new mongoose.Schema(
   {
-    // 🔹 RELATIONS
     marketId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Market",
@@ -38,13 +37,11 @@ const marketBetTypeSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🔹 SESSION CONFIG
     sessions: {
       open: sessionSchema,
       close: sessionSchema
     },
 
-    // 🔹 STATE
     status: {
       type: String,
       enum: ["active", "inactive"],
@@ -52,7 +49,6 @@ const marketBetTypeSchema = new mongoose.Schema(
       index: true
     },
 
-    // 🔹 SOFT DELETE
     isDeleted: {
       type: Boolean,
       default: false,
@@ -64,7 +60,6 @@ const marketBetTypeSchema = new mongoose.Schema(
       default: null
     },
 
-    // 🔹 AUDIT
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
     },
@@ -79,13 +74,11 @@ const marketBetTypeSchema = new mongoose.Schema(
   }
 );
 
-/* 🔐 UNIQUE */
 marketBetTypeSchema.index(
   { marketId: 1, betTypeId: 1, isDeleted: 1 },
   { unique: true }
 );
 
-/* 🔐 VALIDATION */
 marketBetTypeSchema.pre("save", async function () {
   const openEnabled = this.sessions?.open?.enabled;
   const closeEnabled = this.sessions?.close?.enabled;
@@ -95,7 +88,6 @@ marketBetTypeSchema.pre("save", async function () {
   }
 });
 
-/* 🔐 METHODS */
 marketBetTypeSchema.methods.softRemove = function () {
   this.isDeleted = true;
   this.removedAt = new Date();
@@ -103,7 +95,6 @@ marketBetTypeSchema.methods.softRemove = function () {
   return this.save();
 };
 
-/* 🔐 VIRTUAL */
 marketBetTypeSchema.virtual("isTradable").get(function () {
   return this.status === "active" && !this.isDeleted;
 });

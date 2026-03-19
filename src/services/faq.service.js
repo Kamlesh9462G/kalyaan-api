@@ -1,30 +1,55 @@
-const httpStatus = require('http-status')
+const httpStatus = require("http-status");
 const ApiError = require("../utils/ApiError");
-const { Faq } = require("../models/index");
+const { Faq } = require("../models");
 
 const createFaq = async (data) => {
-  try {
-    return Faq.create(data);
-  } catch (error) {
-    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
-  }
+  return Faq.create(data);
 };
 
-const getFaqs = async () => {
-  try {
+const getFaqs = async ({ page, limit }) => {
+  const skip = (page - 1) * limit;
 
-    return Faq.find({ isActive: true }).sort({ order: 1 });
-  } catch (error) {
-    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
-  }
+  const [faqs, total] = await Promise.all([
+    Faq.find({ isActive: true })
+      .sort({ order: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Faq.countDocuments({ isActive: true })
+  ]);
+
+  return {
+    results: faqs,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit)
+  };
 };
 
 const updateFaq = async (id, data) => {
-  return Faq.findByIdAndUpdate(id, data, { new: true });
+  const faq = await Faq.findByIdAndUpdate(id, data, { new: true });
+
+  if (!faq) {
+    throw new ApiError(httpStatus.status.NOT_FOUND, "FAQ not found");
+  }
+
+  return faq;
 };
 
 const deleteFaq = async (id) => {
-  return Faq.findByIdAndDelete(id);
+  // ✅ SOFT DELETE (Recommended)
+  const faq = await Faq.findByIdAndUpdate(
+    id,
+    { isActive: false },
+    { new: true }
+  );
+
+  if (!faq) {
+    throw new ApiError(httpStatus.status.NOT_FOUND, "FAQ not found");
+  }
+
+  return faq;
 };
 
 module.exports = {

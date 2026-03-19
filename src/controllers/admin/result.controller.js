@@ -2,6 +2,15 @@ const httpStatus = require('http-status');
 const catchAsync = require('../../utils/catchAsync');
 const { resultService } = require('../../services/index')
 
+const getResults = catchAsync(async (req, res) => {
+    const result = await resultService.getMarketResultsBoard();
+
+    res.status(httpStatus.status.OK).send({
+        success: true,
+        message: "Result fetched successfully",
+        data: result
+    });
+})
 const declareOpenResult = catchAsync(async (req, res) => {
 
     const result = await resultService.declareOpenResult(
@@ -47,5 +56,6 @@ const cancelMarket = catchAsync(async (req, res) => {
 module.exports = {
     declareOpenResult,
     declareCloseResult,
-    cancelMarket
+    cancelMarket,
+    getResults
 };

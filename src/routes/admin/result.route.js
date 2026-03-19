@@ -8,6 +8,7 @@ const { resultController } = require('../../controllers/admin/index');
 
 
 
+router.get("/", resultController.getResults);
 
 router.post("/open", resultController.declareOpenResult);
 

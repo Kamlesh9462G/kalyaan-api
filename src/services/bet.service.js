@@ -47,7 +47,7 @@ const placeBet = async (customerId, payload) => {
         console.log(betTypeCode)
 
         // 3️⃣ Session Validation (skip for sangam)
-        if (!["HALF_SANGAM", "FULL_SANGAM", "JODI"].includes(betTypeCode)) {
+        if (!["HS", "FS", "JD"].includes(betTypeCode)) {
             if (!betSession) {
                 throw new ApiError(httpStatus.status.BAD_REQUEST, "Session required");
             }
@@ -77,7 +77,7 @@ const placeBet = async (customerId, payload) => {
             }
 
             // 🔥 SINGLE / JODI / PANNA
-            if (["SINGLE", "JODI", "SINGLE_PANNA", "DOUBLE_PANNA", "TRIPPLE_PANNA"].includes(betTypeCode)) {
+            if (["SD", "JD", "SP", "DP", "TP"].includes(betTypeCode)) {
 
                 if (!b.digit) {
                     throw new ApiError(httpStatus.status.BAD_REQUEST, "Digit required");
@@ -92,7 +92,7 @@ const placeBet = async (customerId, payload) => {
             }
 
             // 🔥 HALF SANGAM
-            else if (betTypeCode === "HALF_SANGAM") {
+            else if (betTypeCode === "HS") {
 
                 if (b.openDigit && b.closePanna) {
                     if (b.openDigit.length !== 1 || b.closePanna.length !== 3) {
@@ -122,7 +122,7 @@ const placeBet = async (customerId, payload) => {
             }
 
             // 🔥 FULL SANGAM
-            else if (betTypeCode === "FULL_SANGAM") {
+            else if (betTypeCode === "FS") {
 
                 if (!b.openPanna || !b.closePanna) {
                     throw new ApiError(httpStatus.status.BAD_REQUEST, "Full Sangam requires both pannas");

@@ -1,51 +1,45 @@
 const httpStatus = require("http-status");
 const catchAsync = require("../../utils/catchAsync");
-const { faqService } = require("../../services/index");
+const { faqService } = require("../../services");
 
 const createFaq = catchAsync(async (req, res) => {
-
-  const result = await faqService.createFaq(req.body);
+  const faq = await faqService.createFaq(req.body);
 
   res.status(httpStatus.status.CREATED).send({
     success: true,
     message: "FAQ created successfully",
-    data: result
+    data: faq
   });
-
 });
 
 const getFaqs = catchAsync(async (req, res) => {
+  const { page, limit } = req.query;
 
-  const result = await faqService.getFaqs();
+  const result = await faqService.getFaqs({ page, limit });
 
-  res.send({
+  res.status(httpStatus.status.OK).send({
     success: true,
     data: result
   });
-
 });
 
 const updateFaq = catchAsync(async (req, res) => {
+  const faq = await faqService.updateFaq(req.params.id, req.body);
 
-  const result = await faqService.updateFaq(req.params.id, req.body);
-
-  res.send({
+  res.status(httpStatus.status.OK).send({
     success: true,
     message: "FAQ updated successfully",
-    data: result
+    data: faq
   });
-
 });
 
 const deleteFaq = catchAsync(async (req, res) => {
-
   await faqService.deleteFaq(req.params.id);
 
-  res.send({
+  res.status(httpStatus.status.OK).send({
     success: true,
     message: "FAQ deleted successfully"
   });
-
 });
 
 module.exports = {
