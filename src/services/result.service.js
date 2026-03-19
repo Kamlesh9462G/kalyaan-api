@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const {Market, Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType } = require('../models/index');
+const { Market, Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType } = require('../models/index');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -912,151 +912,89 @@ const declareCloseResult = async (payload, adminId, req) => {
     }
 };
 
-const getMarketResultsBoard = async (date) => {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
+const getCurrentDayResult = async (filterQuery = {}) => {
+    try {
+        const results = await Result.find(filterQuery).populate({ path: 'marketId', select: 'name openTime closeTime status' }).populate({ path: 'declaredBy', select: 'name email' }).sort({ date: -1, createdAt: -1 }).lean();
+        return results || [];
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message || "Failed to fetch results");
+    }
 
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-
-    const data = await Market.aggregate([
-        {
-            $match: {
-                status: "active"
-            }
-        },
-
-        // Lookup results for that market + date
-        {
-            $lookup: {
-                from: "results",
-                let: { marketId: "$_id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$marketId", "$$marketId"] },
-                                    { $gte: ["$date", start] },
-                                    { $lte: ["$date", end] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "results"
-            }
-        },
-
-        // Extract individual values
-        {
-            $addFields: {
-                openPanna: {
-                    $ifNull: [
-                        {
-                            $getField: {
-                                field: "result",
-                                input: {
-                                    $first: {
-                                        $filter: {
-                                            input: "$results",
-                                            cond: {
-                                                $eq: ["$$this.betTypeCode", "OPEN_PANNA"]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "***"
-                    ]
-                },
-
-                closePanna: {
-                    $ifNull: [
-                        {
-                            $getField: {
-                                field: "result",
-                                input: {
-                                    $first: {
-                                        $filter: {
-                                            input: "$results",
-                                            cond: {
-                                                $eq: ["$$this.betTypeCode", "CLOSE_PANNA"]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "***"
-                    ]
-                },
-
-                openDigit: {
-                    $ifNull: [
-                        {
-                            $getField: {
-                                field: "result",
-                                input: {
-                                    $first: {
-                                        $filter: {
-                                            input: "$results",
-                                            cond: {
-                                                $eq: ["$$this.betTypeCode", "OPEN_DIGIT"]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "**"
-                    ]
-                },
-
-                closeDigit: {
-                    $ifNull: [
-                        {
-                            $getField: {
-                                field: "result",
-                                input: {
-                                    $first: {
-                                        $filter: {
-                                            input: "$results",
-                                            cond: {
-                                                $eq: ["$$this.betTypeCode", "CLOSE_DIGIT"]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "**"
-                    ]
-                }
-            }
-        },
-
-        {
-            $project: {
-                name: 1,
-                openTime: 1,
-                closeTime: 1,
-
-                openPanna: 1,
-                openDigit: 1,
-                closeDigit: 1,
-                closePanna: 1
-            }
-        },
-
-        {
-            $sort: { openTime: 1 }
-        }
-    ]);
-
-    return data;
 };
+
+const getMarketResultsBoard = async (date) => {
+  // ✅ ensure correct format (very important)
+  const formattedDate = date || new Date().toISOString().split("T")[0];
+
+  const data = await Market.aggregate([
+    {
+      $match: {
+        status: "active",
+        isDeleted: false
+      }
+    },
+
+    // ✅ lookup using DATE (not createdAt)
+    {
+      $lookup: {
+        from: "results",
+        let: {
+          marketId: "$_id"
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$marketId", "$$marketId"] },
+                  { $eq: ["$date", formattedDate] } // Use formattedDate directly here
+                ]
+              }
+            }
+          }
+        ],
+        as: "result"
+      }
+    },
+
+    // ✅ convert array → object
+    {
+      $addFields: {
+        result: { $first: "$result" }
+      }
+    },
+
+    // ✅ map fields with fallback
+    {
+      $addFields: {
+        openPanna: { $ifNull: ["$result.openPanna", "***"] },
+        openDigit: { $ifNull: ["$result.openDigit", "*"] },
+        closeDigit: { $ifNull: ["$result.closeDigit", "*"] },
+        closePanna: { $ifNull: ["$result.closePanna", "***"] }
+      }
+    },
+
+    {
+      $project: {
+        name: 1,
+        "timings.openTime": 1,
+        "timings.closeTime": 1,
+        openPanna: 1,
+        openDigit: 1,
+        closeDigit: 1,
+        closePanna: 1
+      }
+    },
+
+    {
+      $sort: { "timings.openTime": 1 }
+    }
+  ]);
+
+  return data;
+};
+
+
 
 module.exports = {
     declareOpenResult,
@@ -1068,5 +1006,6 @@ module.exports = {
     isFullSangamWinner,
     isJodiWinner,
     getResultForBetType,
-    getBetTypeCategory
+    getBetTypeCategory,
+    getCurrentDayResult
 };

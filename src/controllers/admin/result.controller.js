@@ -3,14 +3,15 @@ const catchAsync = require('../../utils/catchAsync');
 const { resultService } = require('../../services/index')
 
 const getResults = catchAsync(async (req, res) => {
-    const result = await resultService.getMarketResultsBoard();
+    const { date } = req.query; // Get date from query params if provided
+    const result = await resultService.getMarketResultsBoard(date);
 
     res.status(httpStatus.status.OK).send({
         success: true,
         message: "Result fetched successfully",
         data: result
     });
-})
+});
 const declareOpenResult = catchAsync(async (req, res) => {
 
     const result = await resultService.declareOpenResult(
