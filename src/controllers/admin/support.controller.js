@@ -19,7 +19,18 @@ const adminReplyToTicket = catchAsync(async (req, res) => {
         data
     });
 });
+const getTickets = catchAsync(async (req, res) => {
+    let filterQuery = {};
+    const data = await supportService.getUserTicketsWithConversation(filterQuery);
 
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Tickets fetched successfully",
+        data
+    });
+})
 module.exports = {
     adminReplyToTicket,
+    getTickets
 }

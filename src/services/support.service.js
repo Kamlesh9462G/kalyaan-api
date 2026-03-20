@@ -131,7 +131,10 @@ const closeTicket = async (ticketId, adminId, remark) => {
     }
 };
 
+const getTickets = async () => {
+    return await SupportTicket.find();
 
+}
 
 // GET USER TICKETS
 const getUserTickets = async (customerId, query) => {
@@ -200,47 +203,45 @@ const getTicketConversation = async (ticketId, customerId) => {
     }
 };
 
-const getUserTicketsWithConversation = async (customerId) => {
-  try {
+const getUserTicketsWithConversation = async (filterQuery) => {
+    try {
 
-    const tickets = await SupportTicket.aggregate([
-      {
-        $match: {
-          customerId: customerId
-        }
-      },
+        const tickets = await SupportTicket.aggregate([
+            {
+                $match: filterQuery
+            },
 
-      {
-        $lookup: {
-          from: "ticketmessages",
-          localField: "_id",
-          foreignField: "ticketId",
-          as: "messages"
-        }
-      },
+            {
+                $lookup: {
+                    from: "ticketmessages",
+                    localField: "_id",
+                    foreignField: "ticketId",
+                    as: "messages"
+                }
+            },
 
-      {
-        $addFields: {
-          messages: {
-            $sortArray: {
-              input: "$messages",
-              sortBy: { createdAt: 1 }
+            {
+                $addFields: {
+                    messages: {
+                        $sortArray: {
+                            input: "$messages",
+                            sortBy: { createdAt: 1 }
+                        }
+                    }
+                }
+            },
+
+            {
+                $sort: { createdAt: -1 }
             }
-          }
-        }
-      },
 
-      {
-        $sort: { createdAt: -1 }
-      }
+        ]);
 
-    ]);
+        return tickets;
 
-    return tickets;
-
-  } catch (error) {
-    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
-  }
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
 };
 
 module.exports = {
@@ -250,5 +251,6 @@ module.exports = {
     closeTicket,
     getUserTickets,
     getTicketConversation,
-    getUserTicketsWithConversation
+    getUserTicketsWithConversation,
+    getTickets
 };

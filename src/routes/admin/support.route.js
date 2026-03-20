@@ -7,6 +7,7 @@ const { supportController } = require('../../controllers/admin/index');
 // router.use(auth());
 
 // Get today's status
+router.get('/tickets', supportController.getTickets);
 router.post('/tickets/:ticketId/reply', supportController.adminReplyToTicket);
 
 

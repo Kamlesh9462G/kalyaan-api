@@ -1,5 +1,6 @@
 
 const httpStatus = require('http-status');
+const {ObjectId} = require('mongodb')
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { supportService } = require('../services/index');
@@ -38,7 +39,10 @@ const getTickets = catchAsync(async (req, res) => {
 
     const customerId = req.customer.customerId;
 
-    const tickets = await supportService.getUserTicketsWithConversation(customerId);
+    let filterQuery = {};
+    filterQuery["customerId"] = new ObjectId(customerId)
+
+    const tickets = await supportService.getUserTicketsWithConversation(filterQuery);
 
     res.status(httpStatus.status.OK).json({
         success: true,
