@@ -7,6 +7,8 @@ const createFaq = async (data) => {
 };
 
 const getFaqs = async ({ page, limit }) => {
+
+  return await Faq.find({});
   const skip = (page - 1) * limit;
 
   const [faqs, total] = await Promise.all([

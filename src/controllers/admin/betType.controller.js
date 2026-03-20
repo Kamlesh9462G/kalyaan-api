@@ -83,7 +83,7 @@ const getBetTypeRates = catchAsync(async (req, res) => {
     });
 })
 const updateBetTypeRate = catchAsync(async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.query;
 
     const updatedRate = await betTypeService.updateBetTypeRate(id, req.body);
 
@@ -101,7 +101,7 @@ const updateBetTypeRate = catchAsync(async (req, res) => {
 
 })
 const deleteBetTypeRate = catchAsync(async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.query;
 
     const deletedRate = await betTypeService.deleteBetTypeRate(id);
 

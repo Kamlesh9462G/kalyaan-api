@@ -73,12 +73,44 @@ const addBetTypeRates = async (betRateData) => {
     }
 }
 const getBetTypeRates = async (filterQuery) => {
-    try {
-        return await BetRate.find(filterQuery)
-    } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
-    }
-}
+  try {
+    return await BetRate.aggregate([
+      {
+        $match: filterQuery
+      },
+      {
+        $lookup: {
+          from: "bettypes", // collection name in MongoDB
+          localField: "betTypeId",
+          foreignField: "_id",
+          as: "betType"
+        }
+      },
+      {
+        $unwind: {
+          path: "$betType",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          rate: 1,
+          betTypeId: 1,
+          betTypeName: "$betType.name",
+          description:1,
+          baseAmount:1,
+          payoutAmount:1,
+          session:1,
+          status:1
+
+        }
+      }
+    ]);
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 
 
 // ✅ UPDATE
