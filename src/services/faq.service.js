@@ -6,7 +6,7 @@ const createFaq = async (data) => {
   return Faq.create(data);
 };
 
-const getFaqs = async ({ page, limit }) => {
+const getFaqs = async () => {
 
   return await Faq.find({});
   const skip = (page - 1) * limit;
