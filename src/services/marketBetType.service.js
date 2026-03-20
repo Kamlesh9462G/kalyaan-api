@@ -3,33 +3,118 @@ const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { MarketBetType, Market, BetType } = require('../models');
 
-// ✅ CREATE
+// // ✅ CREATE
+// const addMarketBetType = async (data) => {
+//   try {
+//     // 🔹 Validate Market
+//     const marketExists = await Market.findById(data.marketId);
+//     if (!marketExists) {
+//       throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid marketId");
+//     }
+
+//     // 🔹 Validate BetType
+//     const betTypeExists = await BetType.findById(data.betTypeId);
+//     if (!betTypeExists) {
+//       throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid betTypeId");
+//     }
+
+//     // 🔹 Prevent duplicate
+//     const existing = await MarketBetType.findOne({
+//       marketId: data.marketId,
+//       betTypeId: data.betTypeId,
+//       isDeleted: false
+//     });
+
+//     if (existing) {
+//       throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet type already exists for this market");
+//     }
+
+//     return await MarketBetType.create(data);
+
+//   } catch (error) {
+//     throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+//   }
+// };
+
 const addMarketBetType = async (data) => {
   try {
+    const { marketId, betTypeId } = data;
+
     // 🔹 Validate Market
-    const marketExists = await Market.findById(data.marketId);
+    const marketExists = await Market.findById(marketId);
     if (!marketExists) {
       throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid marketId");
     }
 
-    // 🔹 Validate BetType
-    const betTypeExists = await BetType.findById(data.betTypeId);
-    if (!betTypeExists) {
-      throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid betTypeId");
-    }
+    // 🔹 Ensure array
+    const betTypeIds = Array.isArray(betTypeId) ? betTypeId : [betTypeId];
 
-    // 🔹 Prevent duplicate
-    const existing = await MarketBetType.findOne({
-      marketId: data.marketId,
-      betTypeId: data.betTypeId,
+    // 🔹 Fetch all bet types
+    const betTypes = await BetType.find({
+      _id: { $in: betTypeIds },
       isDeleted: false
     });
 
-    if (existing) {
-      throw new ApiError(httpStatus.status.BAD_REQUEST, "Bet type already exists for this market");
+    if (betTypes.length !== betTypeIds.length) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Some betTypes are invalid");
     }
 
-    return await MarketBetType.create(data);
+    const bulkData = [];
+
+    for (const betType of betTypes) {
+
+      // 🔹 Check duplicate
+      const exists = await MarketBetType.findOne({
+        marketId,
+        betTypeId: betType._id,
+        isDeleted: false
+      });
+
+      if (exists) continue; // skip duplicates
+
+      const supported = betType.supportedSessions || [];
+
+      let payload = {
+        marketId,
+        betTypeId: betType._id
+      };
+
+      // ✅ CASE 1: SESSION BASED
+      if (supported.length > 0) {
+        payload.sessions = {
+          open: supported.includes("open")
+            ? {
+              enabled: true,
+              payout: betType.payout
+            }
+            : undefined,
+
+          close: supported.includes("close")
+            ? {
+              enabled: true,
+              payout: betType.payout
+            }
+            : undefined
+        };
+      }
+
+      // ❌ CASE 2: NO SESSION (JODI / SANGAM)
+      else {
+        payload.sessions = null;
+        payload.defaultPayout = betType.payout;
+      }
+
+      bulkData.push(payload);
+    }
+
+    if (!bulkData.length) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "All bet types already exist");
+    }
+
+    // 🔥 BULK INSERT
+    const result = await MarketBetType.insertMany(bulkData);
+
+    return result;
 
   } catch (error) {
     throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
@@ -149,6 +234,7 @@ const getMarketBetTypes = async (marketId) => {
           digitConfig: "$betType.digitConfig",
           description: "$betType.description",
           sessions: 1,
+          defaultPayout:1,
           status: 1,
           createdAt: 1,
           updatedAt: 1
