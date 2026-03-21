@@ -309,10 +309,16 @@ const addWalletBalance = async (payload) => {
 
 };
 
-
+const getDepositRequests = async (filterQuery) => {
+  try {
+    return await Deposit.find();
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
+  }
+}
 const createDeposit = async (payload) => {
 
-  const { amount, method, meta, customerId ,utrNumber} = payload;
+  const { amount, method, meta, customerId, utrNumber } = payload;
 
   const deposit = await Deposit.create({
     customerId,
@@ -367,7 +373,13 @@ const approveDeposit = async (depositId) => {
 
   return wallet;
 };
-
+const getWithdrawRequests = async (filterQuery) => {
+  try {
+    return await Withdrawal.find();
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
+  }
+}
 const createWithdraw = async (customerId, payload) => {
 
   const { amount, method, accountDetails } = payload;
@@ -439,5 +451,7 @@ module.exports = {
   createWithdraw,
   approveWithdraw,
   getWalletTransactions,
-  getCustomerWallet
+  getCustomerWallet,
+  getDepositRequests,
+  getWithdrawRequests
 }

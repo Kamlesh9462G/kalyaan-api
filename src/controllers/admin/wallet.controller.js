@@ -3,7 +3,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../../utils/catchAsync');
 const { walletService } = require('../../services/index')
 
-const addWalletBalance = async (req, res) => {
+const addWalletBalance = catchAsync(async (req, res) => {
 
     const data = await walletService.addWalletBalance(req.body);
 
@@ -13,9 +13,19 @@ const addWalletBalance = async (req, res) => {
         message: "Wallet balance added successfully",
         data: data
     });
-}
+})
 
-const approveDeposit = async (req, res) => {
+const getDepositRequests = catchAsync(async (req, res) => {
+    const data = await walletService.getDepositRequests(req.body);
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Deposit requests fetched successfully",
+        data: data
+    });
+})
+const approveDeposit = catchAsync(async (req, res) => {
 
     const data = await walletService.approveDeposit(req.params.depositId);
 
@@ -25,9 +35,21 @@ const approveDeposit = async (req, res) => {
         message: "Deposit approved successfully",
         data: data
     });
-}
+})
 
-const approveWithdraw = async (req, res) => {
+const getWithdrawRequests = catchAsync(async (req, res) => {
+
+    const data = await walletService.getWithdrawRequests(req.body);
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Withdrawl requests fetched successfully",
+        data: data
+    });
+
+})
+const approveWithdraw = catchAsync(async (req, res) => {
 
     const data = await walletService.approveWithdraw(req.params.withdrawId);
 
@@ -37,10 +59,12 @@ const approveWithdraw = async (req, res) => {
         message: "Withdraw approved successfully",
         data: data
     });
-}
+})
 
 module.exports = {
     addWalletBalance,
     approveDeposit,
-    approveWithdraw
+    approveWithdraw,
+    getDepositRequests,
+    getWithdrawRequests
 }
