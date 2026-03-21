@@ -10,3 +10,4 @@ module.exports.supportController = require('./support.controller');
 module.exports.guideController = require('./guide.controller')
 module.exports.gameBetGuideController = require('./gameBetGuide.controller')
 module.exports.faqController = require('./faq.controller')
+module.exports.customerController = require('./customer.controller')

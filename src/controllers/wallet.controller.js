@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const { ObjectId } = require('mongodb')
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -6,7 +7,10 @@ const { walletService } = require("../services/index");
 
 const getTransactions = catchAsync(async (req, res) => {
 
-    const transactions = await walletService.getWalletTransactions(req.customer.customerId);
+    let filterQuery = {};
+    filterQuery["customerId"] = new ObjectId(req.customer.customerId);
+
+    const transactions = await walletService.getWalletTransactions(filterQuery);
 
     return res.status(httpStatus.status.OK).json({
         success: true,

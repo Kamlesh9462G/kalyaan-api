@@ -36,6 +36,19 @@ const withdrawSchema = new mongoose.Schema(
       index: true
     },
 
+    // ✅ who processed
+    processedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
+    },
+
+    // ✅ payment reference
+    referenceId: {
+      type: String,
+      default: null
+    },
+
+
     adminRemark: {
       type: String,
       default: null

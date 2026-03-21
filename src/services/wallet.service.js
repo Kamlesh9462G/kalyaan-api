@@ -1,8 +1,11 @@
 const mongoose = require("mongoose");
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Wallet, WalletTransaction, Deposit, Withdrawal } = require('../models/index')
+const { Wallet, WalletTransaction, Deposit, Withdrawal, Customer } = require('../models/index')
 
+const generateTxnId = () => {
+  return `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
+};
 const getTransactions = async (customerId) => {
   try {
     const wallet = await Wallet.findOne({ customerId: customerId });
@@ -25,16 +28,14 @@ const getCustomerWallet = async (customerId) => {
   }
 }
 
-const getWalletTransactions = async (customerId, page = 1, limit = 20) => {
+const getWalletTransactions = async (filterQuery, page = 1, limit = 20) => {
 
   const skip = (page - 1) * limit;
 
   const transactions = await WalletTransaction.aggregate([
 
     {
-      $match: {
-        customerId: new mongoose.Types.ObjectId(customerId)
-      }
+      $match: filterQuery
     },
 
     /* ---------------- BET ITEM LOOKUP ---------------- */
@@ -333,7 +334,66 @@ const createDeposit = async (payload) => {
 };
 
 const approveDeposit = async (depositId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
+  try {
+    const deposit = await Deposit.findById(depositId).session(session);
+
+    if (!deposit) throw new ApiError(404, "Deposit not found");
+
+    if (deposit.status !== "pending") {
+      throw new ApiError(400, "Deposit already processed");
+    }
+
+    // 🔐 Lock update (idempotency safe)
+    deposit.status = "success";
+    deposit.creditedAt = new Date();
+    await deposit.save({ session });
+
+    // 🔎 Get/Create wallet
+    let wallet = await Wallet.findOne({ customerId: deposit.customerId }).session(session);
+
+    if (!wallet) {
+      wallet = await Wallet.create([{
+        customerId: deposit.customerId,
+        balance: 0
+      }], { session });
+
+      wallet = wallet[0];
+    }
+
+    const balanceBefore = wallet.balance;
+    wallet.balance += deposit.amount;
+
+    await wallet.save({ session });
+
+    // 🧾 Transaction entry
+    await WalletTransaction.create([{
+      customerId: deposit.customerId,
+      walletId: wallet._id,
+      type: "credit",
+      reason: "deposit",
+      amount: deposit.amount,
+      balanceBefore,
+      balanceAfter: wallet.balance,
+      referenceType: "deposit",
+      referenceId: deposit._id,
+      txnId: generateTxnId(),
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return wallet;
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+const rejectDeposit = async (depositId) => {
   const deposit = await Deposit.findById(depositId);
 
   if (!deposit) {
@@ -344,35 +404,11 @@ const approveDeposit = async (depositId) => {
     throw new Error("Deposit already processed");
   }
 
-  deposit.status = "success";
+  deposit.status = "failed";
   deposit.creditedAt = new Date();
 
   await deposit.save();
-
-  // credit wallet
-  const wallet = await Wallet.findOne({ customerId: deposit.customerId });
-
-  const balanceBefore = wallet.balance;
-  wallet.balance += deposit.amount;
-
-  await wallet.save();
-
-  await WalletTransaction.create({
-    customerId: deposit.customerId,
-    walletId: wallet._id,
-    type: "credit",
-    reason: "deposit",
-    amount: deposit.amount,
-    balanceBefore,
-    balanceAfter: wallet.balance,
-    referenceType: "deposit",
-    referenceId: deposit._id,
-    txnId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
-
-  });
-
-  return wallet;
-};
+}
 const getWithdrawRequests = async (filterQuery) => {
   try {
     return await Withdrawal.find();
@@ -399,49 +435,93 @@ const createWithdraw = async (customerId, payload) => {
 
   return withdraw;
 };
-const approveWithdraw = async (withdrawId) => {
+const approveWithdraw = async (withdrawId, adminId, body) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const withdraw = await Withdrawal.findById(withdrawId);
+  try {
+    const withdraw = await Withdrawal.findById(withdrawId).session(session);
 
-  if (!withdraw) {
-    throw new Error("Withdraw not found");
+    if (!withdraw) throw new ApiError(404, "Withdraw not found");
+
+    if (withdraw.status !== "requested") {
+      throw new ApiError(400, "Already processed");
+    }
+
+    const wallet = await Wallet.findOne({ customerId: withdraw.customerId }).session(session);
+
+    if (!wallet) throw new ApiError(404, "Wallet not found");
+
+    if (wallet.balance < withdraw.amount) {
+      throw new ApiError(400, "Insufficient balance");
+    }
+
+    const balanceBefore = wallet.balance;
+
+    wallet.balance -= withdraw.amount;
+    await wallet.save({ session });
+
+    await WalletTransaction.create([{
+      customerId: withdraw.customerId,
+      walletId: wallet._id,
+      type: "debit",
+      reason: "withdraw",
+      amount: withdraw.amount,
+      balanceBefore,
+      balanceAfter: wallet.balance,
+      referenceType: "withdraw",
+      referenceId: body.referenceId,
+      txnId: generateTxnId(),
+    }], { session });
+
+    withdraw.status = "paid";
+    withdraw.processedBy = adminId;
+    withdraw.referenceId = body.referenceId;
+    withdraw.processedAt = new Date();
+
+    await withdraw.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return withdraw;
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
+};
+const rejectWithdraw = async (withdrawId, adminId, remark) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (withdraw.status !== "requested") {
-    throw new Error("Already processed");
+  try {
+    const withdraw = await Withdrawal.findById(withdrawId).session(session);
+
+    if (!withdraw) throw new ApiError(404, "Withdraw not found");
+
+    if (withdraw.status !== "requested") {
+      throw new ApiError(400, "Already processed");
+    }
+
+    withdraw.status = "rejected";
+    withdraw.processedBy = adminId;
+    withdraw.processedAt = new Date();
+    withdraw.adminRemark = remark;
+
+    await withdraw.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return withdraw;
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
-
-  const wallet = await Wallet.findOne({ customerId: withdraw.customerId });
-
-  if (wallet.balance < withdraw.amount) {
-    throw new Error("Insufficient balance");
-  }
-
-  const balanceBefore = wallet.balance;
-
-  wallet.balance -= withdraw.amount;
-
-  await wallet.save();
-
-  await WalletTransaction.create({
-    customerId: withdraw.customerId,
-    walletId: wallet._id,
-    type: "debit",
-    reason: "withdraw",
-    amount: withdraw.amount,
-    balanceBefore,
-    balanceAfter: wallet.balance,
-    referenceType: "withdraw",
-    referenceId: withdraw._id,
-    txnId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
-  });
-
-  withdraw.status = "paid";
-  withdraw.processedAt = new Date();
-
-  await withdraw.save();
-
-  return withdraw;
 };
 module.exports = {
   getTransactions,
@@ -453,5 +533,7 @@ module.exports = {
   getWalletTransactions,
   getCustomerWallet,
   getDepositRequests,
-  getWithdrawRequests
+  getWithdrawRequests,
+  rejectDeposit,
+  rejectWithdraw
 }

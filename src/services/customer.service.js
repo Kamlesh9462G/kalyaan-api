@@ -10,6 +10,13 @@ const getCustomer = async (filterQuery) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 }
+const getCustomers = async (filterQuery) => {
+    try {
+        return await Customer.find(filterQuery)
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
 const setCustomerName = async (customerId, name) => {
     try {
         const customer = await Customer.findById(customerId);
@@ -58,5 +65,6 @@ const getCustomerProfile = async (customerId) => {
 module.exports = {
     getCustomer,
     setCustomerName,
-    getCustomerProfile
+    getCustomerProfile,
+    getCustomers
 }
