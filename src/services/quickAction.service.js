@@ -17,7 +17,32 @@ const getQuickActions = async () => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
 }
+const updateQuickAction = async (id, updateData) => {
+    const quickAction = await QuickAction.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!quickAction) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Quick action not found");
+    }
+
+    return quickAction;
+}
+const deleteQuickAction = async (id) => {
+    const quickAction = await QuickAction.findByIdAndUpdate(
+        id,
+        { isActive: false },
+        { new: true }
+    );
+
+    if (!quickAction) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Quick action not found");
+    }
+
+    return quickAction;
+}
+
 module.exports = {
     addQuickAction,
-    getQuickActions
+    getQuickActions,
+    updateQuickAction,
+    deleteQuickAction
 }

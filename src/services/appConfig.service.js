@@ -25,9 +25,23 @@ const updatePaymentFeatures = async (filterQuery, updateData) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
 }
+const deletePaymentFeatures = async () => {
+    const paymentFeature = await PaymentFeature.findByIdAndUpdate(
+        id,
+        { isActive: false },
+        { new: true }
+    );
+
+    if (!paymentFeature) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Payment feature not found");
+    }
+
+    return paymentFeature;
+}
 
 module.exports = {
     addPaymentFeatures,
     getPaymentFeatures,
-    updatePaymentFeatures
+    updatePaymentFeatures,
+    deletePaymentFeatures
 }

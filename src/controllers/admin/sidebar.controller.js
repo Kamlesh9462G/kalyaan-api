@@ -28,7 +28,31 @@ const getSidebars = catchAsync(async (req, res) => {
     });
 })
 
+
+const updateSidebar = catchAsync(async (req, res) => {
+    const result = await sidebarService.updateSidebar(
+        req.params.id,
+        req.body
+    );
+
+    res.send({
+        success: true,
+        message: "Sidebar updated successfully",
+        data: result
+    });
+})
+const deleteSidebar = catchAsync(async (req, res) => {
+    const result = await sidebarService.deleteSidebar(req.params.id);
+
+    res.send({
+        success: true,
+        message: "Sidebar deleted successfully",
+        data: result
+    });
+})
 module.exports = {
     addSidebar,
-    getSidebars
+    getSidebars,
+    updateSidebar,
+    deleteSidebar
 }

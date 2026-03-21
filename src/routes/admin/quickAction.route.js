@@ -9,6 +9,8 @@ const { quickActionController } = require('../../controllers/admin/index');
 // Get today's status
 router.post('/', quickActionController.addQuickAction);
 router.get('/', quickActionController.getQuickActions);
+router.patch('/:id', quickActionController.updateQuickAction);
+router.delete('/:id', quickActionController.deleteQuickAction);
 
 
 

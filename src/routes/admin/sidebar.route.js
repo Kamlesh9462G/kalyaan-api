@@ -9,6 +9,9 @@ const { sidebarController } = require('../../controllers/admin/index');
 // Get today's status
 router.post('/', sidebarController.addSidebar);
 router.get('/', sidebarController.getSidebars);
+router.patch('/:id', sidebarController.updateSidebar);
+router.delete('/:id', sidebarController.deleteSidebar);
+
 
 
 

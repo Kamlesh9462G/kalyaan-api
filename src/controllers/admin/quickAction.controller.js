@@ -27,8 +27,29 @@ const getQuickActions = catchAsync(async (req, res) => {
         data: data
     });
 })
+const updateQuickAction = catchAsync(async (req, res) => {
+    const result = await quickActionService.updateQuickAction(
+        req.params.id,
+        req.body
+    );
 
+    res.send({
+        success: true,
+        message: "Quick action updated successfully",
+        data: result
+    });
+})
+const deleteQuickAction = catchAsync(async (req, res) => {
+    await quickActionService.deleteQuickAction(req.params.id);
+
+    res.send({
+        success: true,
+        message: "Quick section deleted successfully"
+    });
+})
 module.exports = {
     addQuickAction,
-    getQuickActions
+    getQuickActions,
+    updateQuickAction,
+    deleteQuickAction
 }

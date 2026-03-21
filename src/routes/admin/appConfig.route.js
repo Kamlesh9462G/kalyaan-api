@@ -9,7 +9,8 @@ const { appConfigController } = require('../../controllers/admin/index');
 // Get today's status
 router.post('/payment-features', appConfigController.addPaymentFeatures);
 router.get('/payment-features', appConfigController.getPaymentFeatures);
-router.patch('/payment-features', appConfigController.updatePaymentFeatures);
+router.patch('/payment-features/:id', appConfigController.updatePaymentFeatures);
+router.delete('/payment-features/:id', appConfigController.deletePaymentFeatures);
 
 
 

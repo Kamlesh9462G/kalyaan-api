@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const paymentFeatureSchema = new mongoose.Schema({
-  
+
   bankAccount: {
     enabled: { type: Boolean, default: true }
   },
@@ -16,7 +16,12 @@ const paymentFeatureSchema = new mongoose.Schema({
 
   withdraw: {
     enabled: { type: Boolean, default: true }
-  }
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
 
 }, {
   timestamps: true

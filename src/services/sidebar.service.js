@@ -17,7 +17,30 @@ const getSidebars = async () => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
 }
+const updateSidebar = async (id, updateData) => {
+    const sidebar = await Sidebar.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!sidebar) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Sidebar  not found");
+    }
+    return sidebar;
+}
+const deleteSidebar = async (id) => {
+    const sidebar = await Sidebar.findByIdAndUpdate(
+        id,
+        { isActive: false },
+        { new: true }
+    );
+
+    if (!sidebar) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Sidebar  not found");
+    }
+
+    return sidebar;
+}
 module.exports = {
     addSidebar,
-    getSidebars
+    getSidebars,
+    updateSidebar,
+    deleteSidebar
 }
