@@ -12,6 +12,7 @@ const guideRoute = require('./guide.route')
 const gameBetGuideRoute = require('./gameBetGuide.route')
 const faqRoute = require('./faq.route')
 const customerRoute = require('./customer.route')
+const accountRoute = require('./account.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -63,9 +64,14 @@ const defaultRoutes = [
         path: '/faq',
         route: faqRoute
     },
-        {
+    {
         path: '/customers',
         route: customerRoute
+    }
+    ,
+    {
+        path: '/accounts',
+        route: accountRoute
     }
 
 ];
