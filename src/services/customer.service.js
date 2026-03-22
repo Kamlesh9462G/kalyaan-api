@@ -180,6 +180,14 @@ const getCustomers = async (filterQuery) => {
                         }, {
                             '$project': {
                                 '_id': 1,
+                                'betSlipId': 1,
+                                'marketId': 1,
+                                'betTypeCode': 1,
+                                'openDigit': 1,
+                                'closeDigit': 1,
+                                'openPanna': 1,
+                                'closePanna': 1,
+                                'winAmount': 1,
                                 'amount': 1,
                                 'market': 1,
                                 'betType': 1,
