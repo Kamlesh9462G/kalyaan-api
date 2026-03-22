@@ -60,6 +60,16 @@ const customerSchema = new mongoose.Schema(
             index: true
         },
 
+        isDepositBlocked: {
+            type: Boolean,
+            default: false
+        },
+
+        isWithdrawBlocked: {
+            type: Boolean,
+            default: false
+        },
+
         deletedAt: Date
     },
     {
