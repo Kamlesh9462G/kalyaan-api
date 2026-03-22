@@ -225,6 +225,14 @@ const getBetHistory = async (filterQuery) => {
             [
                 {
                     '$match': filterQuery
+                },
+                 {
+                    '$lookup': {
+                        'from': 'customers',
+                        'localField': 'customerId',
+                        'foreignField': '_id',
+                        'as': 'customer'
+                    }
                 }, {
                     '$lookup': {
                         'from': 'betitems',
@@ -257,6 +265,7 @@ const getBetHistory = async (filterQuery) => {
                 }, {
                     '$project': {
                         '_id': 1,
+                        'customer': 1,
                         'session': 1,
                         'totalAmount': 1,
                         'status': 1,
