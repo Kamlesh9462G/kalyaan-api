@@ -35,7 +35,14 @@ const verifyOtp = async ({ email, otp, purpose }) => {
       { expiresIn: "5m" }
     );
 
-    return { resetToken };
+    return {
+      resetToken: resetToken,
+      customerId: customer._id,
+      email: customer.email,
+      isNewCustomer,
+      isMpinSet: Boolean(customer.mpin),
+      walletBalance: wallet.balance,
+    };
   }
 
   // 🔐 AUTH FLOW
