@@ -1,32 +1,27 @@
-
-
-const httpStatus = require('http-status');
-const ApiError = require('../utils/ApiError');
-const catchAsync = require('../utils/catchAsync');
+const httpStatus = require("http-status");
+const catchAsync = require("../utils/catchAsync");
 
 const { authService, tokenService } = require("../services/index");
 
 const sendOtp = catchAsync(async (req, res) => {
-  const { email } = req.body;
+  const { email, purpose = "AUTH" } = req.body;
 
+  const result = await authService.sendOtp(email, purpose);
 
-  const result = await authService.sendOtp(email);
-
-  return res.status(httpStatus.status.OK).json({
+  res.status(httpStatus.status.OK).json({
     success: true,
     status: httpStatus.status.OK,
     message: result.message,
-    data: result.data || null,
+    data: result.data,
   });
 });
 
-
 const verifyOtp = catchAsync(async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp, purpose = "AUTH" } = req.body;
 
-  const result = await authService.verifyOtp({ email, otp });
+  const result = await authService.verifyOtp({ email, otp, purpose });
 
-  return res.status(httpStatus.status.OK).json({
+  res.status(httpStatus.status.OK).json({
     success: true,
     status: httpStatus.status.OK,
     message: "OTP verified successfully",
@@ -34,13 +29,12 @@ const verifyOtp = catchAsync(async (req, res) => {
   });
 });
 
-
 const setMpin = catchAsync(async (req, res) => {
   const { customerId, mpin, device } = req.body;
 
   const result = await authService.setMpin({ customerId, mpin, device });
 
-  return res.status(httpStatus.status.OK).json({
+  res.status(httpStatus.status.OK).json({
     success: true,
     status: httpStatus.status.OK,
     message: "MPIN set successfully",
@@ -53,7 +47,7 @@ const verifyMpin = catchAsync(async (req, res) => {
 
   const result = await authService.verifyMpin({ customerId, mpin, device });
 
-  return res.status(httpStatus.status.OK).json({
+  res.status(httpStatus.status.OK).json({
     success: true,
     status: httpStatus.status.OK,
     message: "MPIN verified successfully",
@@ -61,16 +55,29 @@ const verifyMpin = catchAsync(async (req, res) => {
   });
 });
 
+// ✅ NEW
+const resetMpin = catchAsync(async (req, res) => {
+  const { resetToken, newMpin, device } = req.body;
+
+  const result = await authService.resetMpin({ resetToken, newMpin, device });
+
+  res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: "MPIN reset successfully",
+    data: result,
+  });
+});
 
 const refreshTokens = catchAsync(async (req, res) => {
   const { refreshToken } = req.body;
 
   const tokens = await tokenService.refreshAccessToken(refreshToken);
 
-  return res.status(httpStatus.status.OK).json({
+  res.status(httpStatus.status.OK).json({
     success: true,
     status: httpStatus.status.OK,
-    message: 'Tokens refreshed successfully',
+    message: "Tokens refreshed successfully",
     data: { accessToken: tokens },
   });
 });
@@ -80,5 +87,6 @@ module.exports = {
   verifyOtp,
   setMpin,
   verifyMpin,
-  refreshTokens
-}
+  resetMpin,
+  refreshTokens,
+};

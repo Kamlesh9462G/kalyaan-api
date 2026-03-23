@@ -195,9 +195,61 @@ const getMarketBetType = async (filterQuery) => {
   }
 };
 
-// ✅ AGGREGATE (already good)
+// // ✅ AGGREGATE (already good)
+// const getMarketBetTypes = async (marketId) => {
+//   try {
+//     return await MarketBetType.aggregate([
+//       {
+//         $match: {
+//           marketId: new mongoose.Types.ObjectId(marketId),
+//           isDeleted: false
+//         }
+//       },
+//       {
+//         $lookup: {
+//           from: "markets",
+//           localField: "marketId",
+//           foreignField: "_id",
+//           as: "market"
+//         }
+//       },
+//       { $unwind: "$market" },
+//       {
+//         $lookup: {
+//           from: "bettypes",
+//           localField: "betTypeId",
+//           foreignField: "_id",
+//           as: "betType"
+//         }
+//       },
+//       { $unwind: "$betType" },
+//       {
+//         $project: {
+//           _id: 1,
+//           marketId: 1,
+//           marketName: "$market.name",
+//           marketTimings: "$market.timings",
+//           betTypeId: 1,
+//           betTypeName: "$betType.name",
+//           digitConfig: "$betType.digitConfig",
+//           description: "$betType.description",
+//           sessions: 1,
+//           defaultPayout:1,
+//           status: 1,
+//           createdAt: 1,
+//           updatedAt: 1
+//         }
+//       }
+//     ]);
+//   } catch (error) {
+//     throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+//   }
+// };
+
 const getMarketBetTypes = async (marketId) => {
   try {
+    const today = new Date().toISOString().split("T")[0];
+
     return await MarketBetType.aggregate([
       {
         $match: {
@@ -205,6 +257,8 @@ const getMarketBetTypes = async (marketId) => {
           isDeleted: false
         }
       },
+
+      // ✅ Market lookup
       {
         $lookup: {
           from: "markets",
@@ -214,6 +268,8 @@ const getMarketBetTypes = async (marketId) => {
         }
       },
       { $unwind: "$market" },
+
+      // ✅ BetTypes lookup
       {
         $lookup: {
           from: "bettypes",
@@ -223,6 +279,72 @@ const getMarketBetTypes = async (marketId) => {
         }
       },
       { $unwind: "$betType" },
+
+      // ✅ Results lookup (without unwind)
+      {
+        $lookup: {
+          from: "results",
+          let: { marketId: "$marketId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$marketId", "$$marketId"] },
+                    { $eq: ["$date", today] }
+                  ]
+                }
+              }
+            },
+            {
+              $project: {
+                openPanna: 1,
+                _id: 0
+              }
+            }
+          ],
+          as: "result"
+        }
+      },
+
+      // ✅ Extract first result safely
+      {
+        $addFields: {
+          resultObj: { $arrayElemAt: ["$result", 0] },
+          hasResultForToday: { $gt: [{ $size: "$result" }, 0] }
+        }
+      },
+
+      // ✅ FIXED: Clear conditional logic
+      {
+        $match: {
+          $expr: {
+            $or: [
+              // Case 1: No result exists for today - include ALL bet types
+              { $eq: ["$hasResultForToday", false] },
+              
+              // Case 2: Result exists but openPanna is null/not declared - include ALL bet types
+              {
+                $and: [
+                  { $eq: ["$hasResultForToday", true] },
+                  { $eq: ["$resultObj.openPanna", null] }
+                ]
+              },
+              
+              // Case 3: Result exists AND openPanna is declared - exclude JD, HS, FS
+              {
+                $and: [
+                  { $eq: ["$hasResultForToday", true] },
+                  { $ne: ["$resultObj.openPanna", null] },
+                  { $not: { $in: ["$betType.code", ["JD", "HS", "FS"]] } }
+                ]
+              }
+            ]
+          }
+        }
+      },
+
+      // ✅ Optional: Remove temporary fields
       {
         $project: {
           _id: 1,
@@ -234,15 +356,21 @@ const getMarketBetTypes = async (marketId) => {
           digitConfig: "$betType.digitConfig",
           description: "$betType.description",
           sessions: 1,
-          defaultPayout:1,
+          defaultPayout: 1,
           status: 1,
           createdAt: 1,
-          updatedAt: 1
+          updatedAt: 1,
+          // hasResultForToday: 0,  // Remove temporary field
+          // resultObj: 0,           // Remove temporary field
+          // result: 0               // Remove temporary field
         }
       }
     ]);
   } catch (error) {
-    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    throw new ApiError(
+      httpStatus.status.INTERNAL_SERVER_ERROR,
+      error.message
+    );
   }
 };
 

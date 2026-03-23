@@ -15,7 +15,7 @@ const otpSchema = new mongoose.Schema(
 
     purpose: {
       type: String,
-      enum: ["login", "register", "reset-mpin"],
+      enum: ["AUTH", "FORGOT_MPIN"],
       required: true
     },
 

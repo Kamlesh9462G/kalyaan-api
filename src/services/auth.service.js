@@ -1,47 +1,55 @@
-
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
-const httpStatus = require('http-status');
-const ApiError = require('../utils/ApiError');
 
 const { Customer, Wallet } = require("../models/index");
 const otpService = require("./otp.service");
 const tokenService = require("./token.service");
+const ApiError = require("../utils/ApiError");
+const httpStatus = require("http-status");
 
-const sendOtp = async (email) => {
-  // const customer = await Customer.findOne({ email });
-
-  await otpService.generateAndSendOtp(email);
+const sendOtp = async (email, purpose) => {
+  await otpService.generateAndSendOtp(email, purpose);
 
   return {
     message: "OTP sent successfully",
-    data: {
-      email,
-    },
+    data: { email, purpose },
   };
 };
 
-const verifyOtp = async ({ email, otp }) => {
+const verifyOtp = async ({ email, otp, purpose }) => {
+  await otpService.verifyOtp(email, otp, purpose);
 
-  // 🔐 Step 1: Verify OTP
-  await otpService.verifyOtp(email, otp);
+  // 🔁 FORGOT MPIN FLOW
+  if (purpose === "FORGOT_MPIN") {
+    const customer = await Customer.findOne({ email });
 
-  // 🔎 Step 2: Find customer
+    if (!customer) {
+      throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
+    }
+
+    const resetToken = jwt.sign(
+      { customerId: customer._id, type: "RESET_MPIN" },
+      process.env.JWT_SECRET,
+      { expiresIn: "5m" }
+    );
+
+    return { resetToken };
+  }
+
+  // 🔐 AUTH FLOW
   let customer = await Customer.findOne({ email });
-
   let isNewCustomer = false;
 
   if (!customer) {
     customer = await Customer.create({
       email,
       name: "Guest",
-      mpin: null
+      mpin: null,
     });
-
     isNewCustomer = true;
   }
 
-  // 💰 Step 3: Ensure wallet exists
   let wallet = await Wallet.findOne({ customerId: customer._id });
 
   if (!wallet) {
@@ -49,91 +57,98 @@ const verifyOtp = async ({ email, otp }) => {
       customerId: customer._id,
       balance: 0,
       lockedBalance: 0,
-      status: "active"
+      status: "active",
     });
   }
 
-  // 🧠 Step 4: Response
   return {
     customerId: customer._id,
     email: customer.email,
     isNewCustomer,
     isMpinSet: Boolean(customer.mpin),
-    walletBalance: wallet.balance
+    walletBalance: wallet.balance,
   };
 };
 
 const setMpin = async ({ customerId, mpin, device }) => {
-
-  const customer = await Customer.findOne({_id: new ObjectId(customerId)});
+  const customer = await Customer.findById(customerId);
 
   if (!customer) {
-    throw new ApiError(
-      httpStatus.status.NOT_FOUND,
-      "Customer not found"
-    );
+    throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
   }
 
-  // 🔐 Hash MPIN
   const hashedMpin = await bcrypt.hash(mpin, 10);
-  
-
   customer.mpin = hashedMpin;
   await customer.save();
 
-  // 🚀 Create login session
   const tokens = await tokenService.createSession(customer, device);
 
   return {
     customerId: customer._id,
     accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken
+    refreshToken: tokens.refreshToken,
   };
 };
 
 const verifyMpin = async ({ customerId, mpin, device }) => {
-
   const customer = await Customer.findById(customerId).select("+mpin");
 
-  if (!customer) {
-    throw new ApiError(
-      httpStatus.status.NOT_FOUND,
-      "Customer not found"
-    );
+  if (!customer || !customer.mpin) {
+    throw new ApiError(httpStatus.status.BAD_REQUEST, "MPIN not set");
   }
 
-  if (!customer.mpin) {
-    throw new ApiError(
-      httpStatus.status.BAD_REQUEST,
-      "MPIN not set for this customer"
-    );
-  }
-
-  // 🔐 Compare MPIN using bcrypt
   const isMatch = await bcrypt.compare(mpin, customer.mpin);
 
   if (!isMatch) {
-    throw new ApiError(
-      httpStatus.status.UNAUTHORIZED,
-      "Invalid MPIN"
-    );
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Invalid MPIN");
   }
 
-
-  // 🚀 Create session
   const tokens = await tokenService.createSession(customer, device);
 
   return {
     customerId: customer._id,
     accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken
+    refreshToken: tokens.refreshToken,
   };
 };
 
+// ✅ RESET MPIN
+const resetMpin = async ({ resetToken, newMpin, device }) => {
+  let payload;
+
+  try {
+    payload = jwt.verify(resetToken, process.env.JWT_SECRET);
+  } catch (err) {
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Invalid or expired token");
+  }
+
+  if (payload.type !== "RESET_MPIN") {
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Invalid token type");
+  }
+
+  const customer = await Customer.findById(payload.customerId);
+
+  if (!customer) {
+    throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
+  }
+
+  const hashedMpin = await bcrypt.hash(newMpin, 10);
+  customer.mpin = hashedMpin;
+  await customer.save();
+
+  const tokens = await tokenService.createSession(customer, device);
+
+  return {
+    customerId: customer._id,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  };
+};
 
 module.exports = {
   sendOtp,
   verifyOtp,
   setMpin,
-  verifyMpin
-}
+  verifyMpin,
+  resetMpin,
+};

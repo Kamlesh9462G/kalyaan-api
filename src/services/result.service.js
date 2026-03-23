@@ -914,13 +914,32 @@ const declareCloseResult = async (payload, adminId, req) => {
 
 const getCurrentDayResult = async (filterQuery = {}) => {
     try {
-        const results = await Result.find(filterQuery).populate({ path: 'marketId', select: 'name openTime closeTime status' }).populate({ path: 'declaredBy', select: 'name email' }).sort({ date: -1, createdAt: -1 }).lean();
+        // Build query based on filter
+        const query = {};
+        
+        if (filterQuery.date) {
+            query.date = filterQuery.date;
+        }
+        
+        if (filterQuery.marketId) {
+            query.marketId = filterQuery.marketId;
+        }
+        
+        const results = await Result.find(query)
+            .populate({ path: 'marketId', select: 'name openTime closeTime status' })
+            .populate({ path: 'declaredBy', select: 'name email' })
+            .sort({ date: -1, createdAt: -1 })
+            .lean();
+            
         return results || [];
     } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message || "Failed to fetch results");
+        throw new ApiError(
+            httpStatus.status.INTERNAL_SERVER_ERROR, 
+            error.message || "Failed to fetch results"
+        );
     }
-
 };
+
 
 const getMarketResultsBoard = async (date) => {
   // ✅ ensure correct format (very important)

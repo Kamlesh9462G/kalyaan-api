@@ -3,7 +3,6 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { resultService, marketService,marketBetTypeService } = require("../services/index");
 const getMarketsWithResult = catchAsync(async (req, res, next) => {
-
     const today = new Date().toISOString().slice(0, 10);
 
     // Fetch active markets
@@ -27,31 +26,36 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
     });
 
     const resultMap = new Map();
-
+    
     if (results && results.length) {
         results.forEach((result) => {
-            resultMap.set(result.marketId.toString(), result);
+            resultMap.set(result.marketId._id.toString(), result);
         });
     }
 
     const formattedMarkets = markets.map((market) => {
         const result = resultMap.get(market._id.toString());
 
+        // Default result string when no result exists
         let resultString = "***-**-***";
 
         if (result) {
-            const openPanna = result.openPanna || "***";
-            const closePanna = result.closePanna || "***";
-            const openDigit =
-                result.openDigit !== undefined && result.openDigit !== null
-                    ? result.openDigit
-                    : "*";
-            const closeDigit =
-                result.closeDigit !== undefined && result.closeDigit !== null
-                    ? result.closeDigit
-                    : "*";
-
-            resultString = `${openPanna}-${openDigit}${closeDigit}-${closePanna}`;
+            // Check based on status field (most reliable)
+            if (result.status === "open_declared") {
+                // Only open result declared
+                const openPanna = result.openPanna || "***";
+                const openDigit = result.openDigit || "*";
+                resultString = `${openPanna}-${openDigit}*-${"***"}`;
+            } 
+            else if (result.status === "close_declared" || result.status === "completed") {
+                // Both results declared
+                const openPanna = result.openPanna || "***";
+                const closePanna = result.closePanna || "***";
+                const openDigit = result.openDigit || "*";
+                const closeDigit = result.closeDigit || "*";
+                resultString = `${openPanna}-${openDigit}${closeDigit}-${closePanna}`;
+            }
+            // If status is "pending", keep the default "***-**-***"
         }
 
         return {
@@ -68,7 +72,6 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
         message: "Markets fetched successfully",
         data: formattedMarkets,
     });
-
 });
 
 const getMarketBetTypes = catchAsync(async (req, res, next) => {
