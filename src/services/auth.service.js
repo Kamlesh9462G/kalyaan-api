@@ -22,7 +22,8 @@ const verifyOtp = async ({ email, otp, purpose }) => {
 
   // 🔁 FORGOT MPIN FLOW
   if (purpose === "FORGOT_MPIN") {
-    const customer = await Customer.findOne({ email });
+    const customer = await Customer.findOne({ email }).select("+mpin");
+    // const customer = await Customer.findOne({ email });
 
     if (!customer) {
       throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
