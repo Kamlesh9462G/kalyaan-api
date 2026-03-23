@@ -20,33 +20,8 @@ const sendOtp = async (email, purpose) => {
 const verifyOtp = async ({ email, otp, purpose }) => {
   await otpService.verifyOtp(email, otp, purpose);
 
-  // 🔁 FORGOT MPIN FLOW
-  if (purpose === "FORGOT_MPIN") {
-    const customer = await Customer.findOne({ email }).select("+mpin");
-    // const customer = await Customer.findOne({ email });
-
-    if (!customer) {
-      throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
-    }
-
-    const resetToken = jwt.sign(
-      { customerId: customer._id, type: "RESET_MPIN" },
-      process.env.JWT_SECRET,
-      { expiresIn: "5m" }
-    );
-
-    return {
-      resetToken: resetToken,
-      customerId: customer._id,
-      email: customer.email,
-      isNewCustomer,
-      isMpinSet: Boolean(customer.mpin),
-      walletBalance: wallet.balance,
-    };
-  }
-
-  // 🔐 AUTH FLOW
-  let customer = await Customer.findOne({ email });
+  // 🔍 Get or create customer
+  let customer = await Customer.findOne({ email }).select("+mpin");
   let isNewCustomer = false;
 
   if (!customer) {
@@ -58,6 +33,7 @@ const verifyOtp = async ({ email, otp, purpose }) => {
     isNewCustomer = true;
   }
 
+  // 💰 Get or create wallet
   let wallet = await Wallet.findOne({ customerId: customer._id });
 
   if (!wallet) {
@@ -69,12 +45,25 @@ const verifyOtp = async ({ email, otp, purpose }) => {
     });
   }
 
+  let resetToken = null;
+
+  // 🔁 FORGOT MPIN FLOW
+  if (purpose === "FORGOT_MPIN") {
+    resetToken = jwt.sign(
+      { customerId: customer._id, type: "RESET_MPIN" },
+      process.env.JWT_SECRET,
+      { expiresIn: "5m" }
+    );
+  }
+
+  // 🎯 Unified response
   return {
     customerId: customer._id,
     email: customer.email,
     isNewCustomer,
     isMpinSet: Boolean(customer.mpin),
     walletBalance: wallet.balance,
+    resetToken, // will be null for normal flow
   };
 };
 
