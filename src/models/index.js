@@ -22,3 +22,5 @@ module.exports.TicketMessage = require('./ticketMessage.model');
 module.exports.GuideSection = require('./guide.model')
 module.exports.GameBetGuide = require('./gameBetGuide.model')
 module.exports.Faq = require('./faq.model')
+module.exports.CustomerSession = require('./customerSession.model')
+module.exports.BlacklistedToken = require('./blacklistedToken.model')

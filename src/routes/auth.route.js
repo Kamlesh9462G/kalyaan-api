@@ -11,4 +11,6 @@ router.post("/reset-mpin", authController.resetMpin); // ✅ NEW
 
 router.post("/refresh-token", authController.refreshTokens);
 
+router.post("/logout", authController.logout);
+
 module.exports = router;

@@ -81,7 +81,29 @@ const refreshTokens = catchAsync(async (req, res) => {
     data: { accessToken: tokens },
   });
 });
-
+const logout = catchAsync(async (req, res) => {
+  const { refreshToken, logoutAll = false } = req.body;
+  
+  // Get access token from authorization header
+  const accessToken = req.headers.authorization?.replace('Bearer ', '');
+  
+  // Get customer ID from request (from auth middleware)
+  const customerId = req.customer?.customerId;
+  
+  const result = await authService.logout({ 
+    refreshToken, 
+    accessToken, 
+    customerId, 
+    logoutAll 
+  });
+  
+  res.status(httpStatus.status.OK).json({
+    success: true,
+    status: httpStatus.status.OK,
+    message: result.message,
+    data: result.data,
+  });
+});
 module.exports = {
   sendOtp,
   verifyOtp,
@@ -89,4 +111,5 @@ module.exports = {
   verifyMpin,
   resetMpin,
   refreshTokens,
+  logout
 };

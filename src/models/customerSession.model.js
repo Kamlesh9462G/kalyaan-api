@@ -34,7 +34,11 @@ const customerSessionSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
-    }
+    },
+    loggedOutAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

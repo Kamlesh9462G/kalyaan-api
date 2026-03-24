@@ -2,12 +2,12 @@ const jwt = require('jsonwebtoken');
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { customerService, deviceService } = require('../services');
+const {BlacklistedToken,CustomerSession} = require('../models/index');
 
 const auth = () => catchAsync(async (req, res, next) => {
-
-  
-console.log("Auth middleware called");
+  console.log("Auth middleware called");
   const token = req.headers.authorization?.replace('Bearer ', '');
+  
   if (!token) {
     return res.status(httpStatus.status.UNAUTHORIZED).json({
       success: false,
@@ -17,13 +17,47 @@ console.log("Auth middleware called");
   }
 
   try {
+    // ✅ CRITICAL: Check if token is blacklisted FIRST
+    const isBlacklisted = await BlacklistedToken.findOne({ token: token });
+    if (isBlacklisted) {
+      return res.status(httpStatus.status.UNAUTHORIZED).json({
+        success: false,
+        status: httpStatus.status.UNAUTHORIZED,
+        message: 'Session expired. Please login again.',
+        code: 'TOKEN_REVOKED'
+      });
+    }
+
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
+    console.log(payload)
     if (payload.type !== 'access') {
+      console.log("came inside this")
       return res.status(httpStatus.status.UNAUTHORIZED).json({
         success: false,
         status: httpStatus.status.UNAUTHORIZED,
         message: 'Invalid token type'
+      });
+    }
+
+    console.log("came here")
+
+    // Optional: Check if session is still active
+    const session = await CustomerSession.findOne({
+      customerId: payload.customerId,
+      isActive: true,
+    });
+
+    console.log(session)
+
+    // If you want to also check if ANY session is active (not just device-specific)
+    // This ensures if user logged out from all devices, all tokens are invalid
+    if (!session) {
+      return res.status(httpStatus.status.UNAUTHORIZED).json({
+        success: false,
+        status: httpStatus.status.UNAUTHORIZED,
+        message: 'No active session found. Please login again.',
+        code: 'NO_ACTIVE_SESSION'
       });
     }
 
@@ -37,28 +71,11 @@ console.log("Auth middleware called");
       });
     }
 
-    // if (employee.refreshToken == null) {
-    //   return res.status(httpStatus.status.UNAUTHORIZED).json({
-    //     message: 'Session expired. Please login again.',
-    //     code: 'SESSION_LOGGED_OUT',
-    //   });
-    // }
-
-    // // Check if device is trusted (optional for extra security)
-    // const deviceId = req.headers['x-device-id'];
-    // if (deviceId) {
-    //   const isDeviceTrusted = await deviceService.isDeviceTrusted(employee._id, deviceId);
-    //   if (!isDeviceTrusted) {
-    //     return res.status(httpStatus.status.UNAUTHORIZED).json({
-    //       message: 'Untrusted device. Please login again.'
-    //     });
-    //   }
-    // }
-
     req.customer = {
       customerId: customer._id,
       email: customer.email,
     };
+    req.accessToken = token; // Store token for potential blacklisting
 
     next();
   } catch (error) {

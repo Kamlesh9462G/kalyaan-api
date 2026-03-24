@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 
-const { Customer, Wallet } = require("../models/index");
+const { Customer, Wallet, CustomerSession } = require("../models/index");
 const otpService = require("./otp.service");
 const tokenService = require("./token.service");
 const ApiError = require("../utils/ApiError");
@@ -147,6 +147,96 @@ const resetMpin = async ({ resetToken, newMpin, device }) => {
     refreshToken: tokens.refreshToken,
   };
 };
+const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll = false }) => {
+  try {
+    // If logoutAll is true, invalidate all sessions and blacklist all tokens
+    if (logoutAll && customerId) {
+      // Deactivate all sessions
+      await CustomerSession.updateMany(
+        { customerId: customerId, isActive: true },
+        { isActive: false, loggedOutAt: new Date() }
+      );
+      
+      // Note: Blacklisting all tokens would require storing them, which is complex
+      // For now, deactivating sessions will prevent refresh token usage
+      // Access tokens will still work until expiry, but without refresh capability
+      
+      return {
+        message: "Logged out from all devices successfully",
+        data: { timestamp: new Date().toISOString() }
+      };
+    }
+
+    // Handle single device logout
+    // 1. Blacklist access token if provided
+    if (accessToken) {
+      try {
+        const decoded = jwt.decode(accessToken);
+        if (decoded && decoded.customerId) {
+          await tokenService.blacklistAccessToken(accessToken, decoded.customerId);
+        }
+      } catch (error) {
+        console.log("Access token blacklist error:", error);
+      }
+    }
+
+    // 2. Handle refresh token - blacklist and deactivate session
+    if (refreshToken) {
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        
+        if (decoded.type === "refresh" && decoded.deviceId && decoded.customerId) {
+          // Blacklist the refresh token
+          await tokenService.blacklistRefreshToken(refreshToken, decoded.customerId);
+          
+          // Invalidate the specific session
+          await CustomerSession.findOneAndUpdate(
+            {
+              customerId: decoded.customerId,
+              deviceId: decoded.deviceId,
+              refreshToken: refreshToken,
+            },
+            {
+              isActive: false,
+              loggedOutAt: new Date(),
+            }
+          );
+        }
+      } catch (error) {
+        console.log("Refresh token processing error:", error);
+        
+        // If token verification fails but we have customerId, deactivate all sessions for that customer
+        if (customerId) {
+          await CustomerSession.updateMany(
+            { customerId: customerId, isActive: true },
+            { isActive: false, loggedOutAt: new Date() }
+          );
+        }
+      }
+    }
+
+    // If we have customerId but no tokens, still deactivate sessions
+    if (customerId && !refreshToken && !accessToken) {
+      await CustomerSession.updateMany(
+        { customerId: customerId, isActive: true },
+        { isActive: false, loggedOutAt: new Date() }
+      );
+      console.log(`User ${customerId} logged out without tokens`);
+    }
+
+    return {
+      message: "Logged out successfully",
+      data: { timestamp: new Date().toISOString() }
+    };
+  } catch (error) {
+    console.error("Logout error:", error);
+    // Always return success even if something fails
+    return {
+      message: "Logged out successfully",
+      data: { timestamp: new Date().toISOString() }
+    };
+  }
+};
 
 module.exports = {
   sendOtp,
@@ -154,4 +244,5 @@ module.exports = {
   setMpin,
   verifyMpin,
   resetMpin,
+  logout
 };
