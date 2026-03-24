@@ -82,6 +82,8 @@ const setMpin = async ({ customerId, mpin, device }) => {
 
   return {
     customerId: customer._id,
+    customerName: customer.name,
+    customerEmail: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
@@ -104,6 +106,8 @@ const verifyMpin = async ({ customerId, mpin, device }) => {
 
   return {
     customerId: customer._id,
+    customerName: customer.name,
+    customerEmail: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
@@ -137,6 +141,8 @@ const resetMpin = async ({ resetToken, newMpin, device }) => {
 
   return {
     customerId: customer._id,
+    customerName: customer.name,
+    customerEmail: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
