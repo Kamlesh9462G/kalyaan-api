@@ -226,7 +226,7 @@ const getBetHistory = async (filterQuery) => {
                 {
                     '$match': filterQuery
                 },
-                 {
+                {
                     '$lookup': {
                         'from': 'customers',
                         'localField': 'customerId',
@@ -293,7 +293,8 @@ const getBetHistory = async (filterQuery) => {
                             'amount': 1,
                             'status': 1,
                             'possibleWinAmount': 1,
-                            'winAmount': 1
+                            'winAmount': 1,
+                            'session': 1
                         }
                     }
                 }
