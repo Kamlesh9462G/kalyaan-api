@@ -27,7 +27,6 @@ const verifyOtp = async ({ email, otp, purpose }) => {
   if (!customer) {
     customer = await Customer.create({
       email,
-      name: "Guest",
       mpin: null,
     });
     isNewCustomer = true;
