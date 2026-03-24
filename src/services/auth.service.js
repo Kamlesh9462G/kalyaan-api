@@ -58,6 +58,7 @@ const verifyOtp = async ({ email, otp, purpose }) => {
   // 🎯 Unified response
   return {
     customerId: customer._id,
+    name: customer.name,
     email: customer.email,
     isNewCustomer,
     isMpinSet: Boolean(customer.mpin),
@@ -81,8 +82,8 @@ const setMpin = async ({ customerId, mpin, device }) => {
 
   return {
     customerId: customer._id,
-    customerName: customer.name,
-    customerEmail: customer.email,
+    name: customer.name,
+    email: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
@@ -105,8 +106,8 @@ const verifyMpin = async ({ customerId, mpin, device }) => {
 
   return {
     customerId: customer._id,
-    customerName: customer.name,
-    customerEmail: customer.email,
+    name: customer.name,
+    email: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
@@ -140,8 +141,8 @@ const resetMpin = async ({ resetToken, newMpin, device }) => {
 
   return {
     customerId: customer._id,
-    customerName: customer.name,
-    customerEmail: customer.email,
+    name: customer.name,
+    email: customer.email,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   };
