@@ -17,3 +17,4 @@ module.exports.supportService = require('./support.service');
 module.exports.guideService = require('./guide.service');
 module.exports.gameBetGuideService = require('./gameBetGuide.service')
 module.exports.faqService = require('./faq.service')
+module.exports.merchantVpaService = require('./merchantVpa.service')

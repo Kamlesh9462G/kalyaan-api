@@ -423,7 +423,7 @@ const createWithdraw = async (customerId, payload) => {
   const wallet = await Wallet.findOne({ customerId });
 
   if (!wallet || wallet.balance < amount) {
-    throw new Error("Insufficient balance");
+    throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient balance");
   }
 
   const withdraw = await Withdrawal.create({
@@ -442,18 +442,18 @@ const approveWithdraw = async (withdrawId, adminId, body) => {
   try {
     const withdraw = await Withdrawal.findById(withdrawId).session(session);
 
-    if (!withdraw) throw new ApiError(404, "Withdraw not found");
+    if (!withdraw) throw new ApiError(httpStatus.status.NOT_FOUND, "Withdraw not found");
 
     if (withdraw.status !== "requested") {
-      throw new ApiError(400, "Already processed");
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Already processed");
     }
 
     const wallet = await Wallet.findOne({ customerId: withdraw.customerId }).session(session);
 
-    if (!wallet) throw new ApiError(404, "Wallet not found");
+    if (!wallet) throw new ApiError(httpStatus.status.NOT_FOUND, "Wallet not found");
 
     if (wallet.balance < withdraw.amount) {
-      throw new ApiError(400, "Insufficient balance");
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient balance");
     }
 
     const balanceBefore = wallet.balance;

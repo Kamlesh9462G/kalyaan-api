@@ -6,8 +6,23 @@ const { BankAccount, UpiAccount } = require("../models/index");
 
 
 const addBankAccount = async (bankAccountData) => {
-
+    const { customerId, accountNumber, ifsc } = bankAccountData;
     try {
+
+        // 🔍 Check duplicate
+        const existingAccount = await BankAccount.findOne({
+            accountNumber,
+            ifsc,
+            customerId
+        });
+
+        if (existingAccount) {
+            throw new ApiError(
+                httpStatus.status.BAD_REQUEST,
+                "Bank account already exists"
+            );
+        }
+
         return await BankAccount.create(bankAccountData);
     } catch (error) {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
@@ -75,7 +90,22 @@ const deleteBankAccount = async (customerId, accountId) => {
 }
 const addUpiAccount = async (upiAccountData) => {
 
+    const { upiId, customerId } = upiAccountData;
     try {
+
+        // 🔍 Check duplicate
+        const existingAccount = await UpiAccount.findOne({
+            upiId,
+            customerId
+        });
+
+        if (existingAccount) {
+            throw new ApiError(
+                httpStatus.status.BAD_REQUEST,
+                "UPI account already exists"
+            );
+        }
+
         return await UpiAccount.create(upiAccountData);
     } catch (error) {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);

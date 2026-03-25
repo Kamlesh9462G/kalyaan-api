@@ -21,7 +21,7 @@ const updateMarket = async (marketId, updateData) => {
 
         return market;
     } catch (error) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 };
 
@@ -31,7 +31,7 @@ const deleteMarket = async (marketId) => {
         const market = await Market.findByIdAndDelete(marketId);
         return market;
     } catch (error) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 };
 

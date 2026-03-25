@@ -14,6 +14,7 @@ const faqRoute = require('./faq.route')
 const customerRoute = require('./customer.route')
 const accountRoute = require('./account.route')
 const betRoute = require('./bet.route')
+const merchantVpaRoute = require('./merchantVpa.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -78,6 +79,10 @@ const defaultRoutes = [
     {
         path: '/bets',
         route: betRoute
+    },
+        {
+        path: '/merchant-vpas',
+        route: merchantVpaRoute
     }
 
 ];
