@@ -80,7 +80,7 @@ const defaultRoutes = [
         path: '/bets',
         route: betRoute
     },
-        {
+    {
         path: '/merchant-vpas',
         route: merchantVpaRoute
     }
