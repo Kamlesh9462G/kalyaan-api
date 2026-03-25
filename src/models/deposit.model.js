@@ -22,6 +22,10 @@ const depositSchema = new mongoose.Schema(
       required: true
     },
 
+    vpaId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+
     transactionId: {
       type: String,
       required: true,

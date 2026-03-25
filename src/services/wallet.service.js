@@ -319,13 +319,14 @@ const getDepositRequests = async (filterQuery) => {
 }
 const createDeposit = async (payload) => {
 
-  const { amount, method, meta, customerId, utrNumber } = payload;
+  const { amount, method, meta, customerId, utrNumber, vpaId } = payload;
 
   const deposit = await Deposit.create({
     customerId,
     amount,
     method,
     utrNumber,
+    vpaId,
     transactionId: `TXN${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 10)}`,
     meta
   });
