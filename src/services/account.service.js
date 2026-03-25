@@ -58,6 +58,21 @@ const updateBankAccount = async (customerId, accountId, updateData) => {
         );
     }
 };
+const deleteBankAccount = async (customerId, accountId) => {
+
+    const bankAccount = await BankAccount.findOneAndUpdate(
+        { customerId: customerId, _id: new ObjectId(accountId) },
+        { isActive: false },
+        { new: true }
+    );
+
+    if (!bankAccount) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Bank account not found");
+    }
+
+    return bankAccount;
+
+}
 const addUpiAccount = async (upiAccountData) => {
 
     try {
@@ -108,11 +123,29 @@ const updateUpiAccount = async (customerId, accountId, updateData) => {
         );
     }
 }
+
+const deleteUpiAccount = async (customerId, accountId) => {
+
+    const upiAccount = await UpiAccount.findOneAndUpdate(
+        { customerId: customerId, _id: new ObjectId(accountId) },
+        { isActive: false },
+        { new: true }
+    );
+
+    if (!upiAccount) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "UPI account not found");
+    }
+
+    return upiAccount;
+
+}
 module.exports = {
     addBankAccount,
     getBankAccounts,
     updateBankAccount,
     getUpiAccounts,
     updateUpiAccount,
-    addUpiAccount
+    addUpiAccount,
+    deleteBankAccount,
+    deleteUpiAccount
 }

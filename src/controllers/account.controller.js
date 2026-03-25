@@ -6,7 +6,7 @@ const catchAsync = require('../utils/catchAsync');
 const { accountService } = require("../services/index");
 
 
-const addBankAccount = async (req, res) => {
+const addBankAccount = catchAsync(async (req, res) => {
 
     req.body.customerId = req.customer.customerId;
 
@@ -19,12 +19,13 @@ const addBankAccount = async (req, res) => {
         data: result
     });
 
-}
-const getBankAccounts = async (req, res) => {
+})
+const getBankAccounts = catchAsync(async (req, res) => {
 
     let filterQuery = {};
 
     filterQuery["customerId"] = new ObjectId(req.customer.customerId)
+    filterQuery["isActive"] = true
 
     const result = await accountService.getBankAccounts(filterQuery);
 
@@ -35,8 +36,8 @@ const getBankAccounts = async (req, res) => {
         data: result
     });
 
-}
-const updateBankAccount = async (req, res) => {
+})
+const updateBankAccount = catchAsync(async (req, res) => {
 
     const customerId = req.customer.customerId;
     const accountId = req.query.id;
@@ -53,8 +54,28 @@ const updateBankAccount = async (req, res) => {
         message: "Bank account updated successfully",
         data: result
     });
-};
-const addUpiAccount = async (req, res) => {
+});
+const deleteBankAccount = catchAsync(async (req, res) => {
+    const customerId = req.customer.customerId;
+    const accountId = req.query.id;
+
+    const result = await accountService.deleteBankAccount(
+        customerId,
+        accountId
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Bank account deleted successfully",
+        data: result
+    });
+})
+
+
+
+
+const addUpiAccount = catchAsync(async (req, res) => {
     req.body.customerId = req.customer.customerId;
 
     const result = await accountService.addUpiAccount(req.body);
@@ -66,12 +87,13 @@ const addUpiAccount = async (req, res) => {
         data: result
     });
 
-}
-const getUpiAccounts = async (req, res) => {
+})
+const getUpiAccounts = catchAsync(async (req, res) => {
 
-        let filterQuery = {};
+    let filterQuery = {};
 
     filterQuery["customerId"] = new ObjectId(req.customer.customerId)
+    filterQuery["isActive"] = true
 
     const result = await accountService.getUpiAccounts(filterQuery);
 
@@ -82,8 +104,8 @@ const getUpiAccounts = async (req, res) => {
         data: result
     });
 
-}
-const updateUpiAccount = async (req, res) => {
+})
+const updateUpiAccount = catchAsync(async (req, res) => {
     const customerId = req.customer.customerId;
     const accountId = req.query.id;
 
@@ -99,12 +121,30 @@ const updateUpiAccount = async (req, res) => {
         message: "UPI account updated successfully",
         data: result
     });
-}
+})
+const deleteUpiAccount = catchAsync(async (req, res) => {
+    const customerId = req.customer.customerId;
+    const accountId = req.query.id;
+
+    const result = await accountService.deleteUpiAccount(
+        customerId,
+        accountId
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "UPI account deleted successfully",
+        data: result
+    });
+})
 module.exports = {
     addBankAccount,
     getBankAccounts,
     addUpiAccount,
     getUpiAccounts,
     updateBankAccount,
-    updateUpiAccount
+    updateUpiAccount,
+    deleteBankAccount,
+    deleteUpiAccount
 }
