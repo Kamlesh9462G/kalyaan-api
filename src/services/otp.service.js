@@ -34,5 +34,5 @@ exports.verifyOtp = async (email, otp, purpose) => {
   }
 
   record.isUsed = true;
-  await record.save();
+  return await record.save();
 };

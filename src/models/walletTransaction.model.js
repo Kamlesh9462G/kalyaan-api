@@ -37,7 +37,8 @@ const walletTransactionSchema = new mongoose.Schema(
       "deposit",
       "withdraw",
       "admin_credit",
-      "admin_debit"
+      "admin_debit",
+      "referral_bonus"
     ],
     required: true,
     index: true
@@ -64,7 +65,7 @@ const walletTransactionSchema = new mongoose.Schema(
   // 🔗 REFERENCE
   referenceType: {
     type: String,
-    enum: ["betSlip", "betItem", "deposit", "withdraw", "manual"],
+    enum: ["betSlip", "betItem", "deposit", "withdraw", "manual","referral1"],
     default: null
   },
 

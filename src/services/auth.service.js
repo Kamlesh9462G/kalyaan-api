@@ -36,19 +36,35 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
   let isNewCustomer = false;
   let referrer = null;
 
+  // =========================================================
   // 👤 NEW USER FLOW
+  // =========================================================
   if (!customer) {
 
-    // 🔗 validate referral again (secure)
+    // 🔗 Validate referral (only for new users)
     if (referralCode) {
       referrer = await Customer.findOne({ referralCode });
 
       if (!referrer) {
-        throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid referral code");
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Invalid referral code"
+        );
+      }
+
+      // 🚫 Prevent self-referral
+      if (referrer.email === email) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "You cannot use your own referral code"
+        );
       }
     }
 
-    // create customer
+    // =========================================================
+    // 👤 CREATE CUSTOMER
+    // =========================================================
+
     customer = await Customer.create({
       email,
       mpin: null,
@@ -57,83 +73,29 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
 
     isNewCustomer = true;
 
-    const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
-      await otpService.verifyOtp(email, otp, purpose);
+    // =========================================================
+    // 📊 CREATE REFERRAL RECORD
+    // =========================================================
 
-      let customer = await Customer.findOne({ email }).select("+mpin");
-      let isNewCustomer = false;
-      let referrer = null;
+    if (referrer) {
+      await Referral.create({
+        referrer: referrer._id,
+        referredUser: customer._id,
+        status: "PENDING",
+        totalDeposit: 0, // ✅ IMPORTANT INITIALIZATION
+      });
 
-      // 👤 NEW USER FLOW
-      if (!customer) {
-
-        // 🔗 validate referral again (secure)
-        if (referralCode) {
-          referrer = await Customer.findOne({ referralCode });
-
-          if (!referrer) {
-            throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid referral code");
-          }
-        }
-
-        // create customer
-        customer = await Customer.create({
-          email,
-          mpin: null,
-          referredBy: referrer?._id || null
-        });
-
-        isNewCustomer = true;
-
-        // 📊 create referral record
-        if (referrer) {
-          await Referral.create({
-            referrer: referrer._id,
-            referredUser: customer._id,
-            status: "PENDING"
-          });
-
-          await Customer.findByIdAndUpdate(referrer._id, {
-            $inc: { referralCount: 1 }
-          });
-        }
-      }
-
-      // 💰 WALLET (safe for both new + existing)
-      let wallet = await Wallet.findOne({ customerId: customer._id });
-
-      if (!wallet) {
-        wallet = await Wallet.create({
-          customerId: customer._id,
-          balance: 0,
-          lockedBalance: 0,
-          status: "active",
-        });
-      }
-
-      let resetToken = null;
-
-      if (purpose === "FORGOT_MPIN") {
-        resetToken = jwt.sign(
-          { customerId: customer._id, type: "RESET_MPIN" },
-          process.env.JWT_SECRET,
-          { expiresIn: "5m" }
-        );
-      }
-
-      return {
-        customerId: customer._id,
-        name: customer.name,
-        email: customer.email,
-        isNewCustomer,
-        isMpinSet: Boolean(customer.mpin),
-        walletBalance: wallet.balance,
-        resetToken,
-      };
-    };
+      // 📈 Increase referrer count
+      await Customer.findByIdAndUpdate(referrer._id, {
+        $inc: { referralCount: 1 }
+      });
+    }
   }
 
-  // 💰 WALLET (safe for both new + existing)
+  // =========================================================
+  // 💰 WALLET CREATION (SAFE)
+  // =========================================================
+
   let wallet = await Wallet.findOne({ customerId: customer._id });
 
   if (!wallet) {
@@ -145,6 +107,10 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
     });
   }
 
+  // =========================================================
+  // 🔁 FORGOT MPIN FLOW
+  // =========================================================
+
   let resetToken = null;
 
   if (purpose === "FORGOT_MPIN") {
@@ -154,6 +120,10 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
       { expiresIn: "5m" }
     );
   }
+
+  // =========================================================
+  // 🎯 FINAL RESPONSE
+  // =========================================================
 
   return {
     customerId: customer._id,
