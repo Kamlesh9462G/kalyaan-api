@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Wallet, WalletTransaction, Deposit, Withdrawal, Customer } = require('../models/index')
+const { Wallet, WalletTransaction, Deposit, Withdrawal, Customer,Notification } = require('../models/index')
 
 const generateTxnId = () => {
   return `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -382,6 +382,11 @@ const approveDeposit = async (depositId) => {
       referenceId: deposit._id,
       txnId: generateTxnId(),
     }], { session });
+
+
+    await Notification.create({})
+
+
 
     await session.commitTransaction();
     session.endSession();

@@ -6,7 +6,7 @@ const auth = require("../middlewares/auth");
 router.post("/bank", auth(), accountController.addBankAccount);
 router.get("/bank", auth(), accountController.getBankAccounts);
 router.patch("/bank",auth(),accountController.updateBankAccount)
-router.delete("/bank",auth(),accountController.updateBankAccount)
+router.delete("/bank",auth(),accountController.deleteBankAccount)
 
 
 router.post("/upi", auth(), accountController.addUpiAccount);

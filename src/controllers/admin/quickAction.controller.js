@@ -33,7 +33,7 @@ const updateQuickAction = catchAsync(async (req, res) => {
         req.body
     );
 
-    res.send({
+    return res.send({
         success: true,
         message: "Quick action updated successfully",
         data: result
