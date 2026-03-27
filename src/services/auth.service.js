@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 
-const { Customer, Wallet, CustomerSession,Referral } = require("../models/index");
+const { Customer, Wallet, CustomerSession, Referral } = require("../models/index");
 const otpService = require("./otp.service");
 const tokenService = require("./token.service");
 const ApiError = require("../utils/ApiError");
@@ -57,18 +57,80 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
 
     isNewCustomer = true;
 
-    // 📊 create referral record
-    if (referrer) {
-      await Referral.create({
-        referrer: referrer._id,
-        referredUser: customer._id,
-        status: "PENDING"
-      });
+    const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
+      await otpService.verifyOtp(email, otp, purpose);
 
-      await Customer.findByIdAndUpdate(referrer._id, {
-        $inc: { referralCount: 1 }
-      });
-    }
+      let customer = await Customer.findOne({ email }).select("+mpin");
+      let isNewCustomer = false;
+      let referrer = null;
+
+      // 👤 NEW USER FLOW
+      if (!customer) {
+
+        // 🔗 validate referral again (secure)
+        if (referralCode) {
+          referrer = await Customer.findOne({ referralCode });
+
+          if (!referrer) {
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid referral code");
+          }
+        }
+
+        // create customer
+        customer = await Customer.create({
+          email,
+          mpin: null,
+          referredBy: referrer?._id || null
+        });
+
+        isNewCustomer = true;
+
+        // 📊 create referral record
+        if (referrer) {
+          await Referral.create({
+            referrer: referrer._id,
+            referredUser: customer._id,
+            status: "PENDING"
+          });
+
+          await Customer.findByIdAndUpdate(referrer._id, {
+            $inc: { referralCount: 1 }
+          });
+        }
+      }
+
+      // 💰 WALLET (safe for both new + existing)
+      let wallet = await Wallet.findOne({ customerId: customer._id });
+
+      if (!wallet) {
+        wallet = await Wallet.create({
+          customerId: customer._id,
+          balance: 0,
+          lockedBalance: 0,
+          status: "active",
+        });
+      }
+
+      let resetToken = null;
+
+      if (purpose === "FORGOT_MPIN") {
+        resetToken = jwt.sign(
+          { customerId: customer._id, type: "RESET_MPIN" },
+          process.env.JWT_SECRET,
+          { expiresIn: "5m" }
+        );
+      }
+
+      return {
+        customerId: customer._id,
+        name: customer.name,
+        email: customer.email,
+        isNewCustomer,
+        isMpinSet: Boolean(customer.mpin),
+        walletBalance: wallet.balance,
+        resetToken,
+      };
+    };
   }
 
   // 💰 WALLET (safe for both new + existing)

@@ -375,9 +375,7 @@ const approveDeposit = async (depositId) => {
     }
 
     const balanceBefore = wallet.balance;
-
     wallet.balance += deposit.amount;
-
     await wallet.save({ session });
 
     // 🧾 Deposit transaction
@@ -395,13 +393,13 @@ const approveDeposit = async (depositId) => {
     }], { session });
 
     // =========================================================
-    // ⚙️ STEP 4: FETCH SETTINGS (ONCE)
+    // ⚙️ STEP 4: FETCH SETTINGS
     // =========================================================
 
     const settings = await ReferralSettings.findOne().session(session);
 
     // =========================================================
-    // 🎯 STEP 5: UPDATE WAGERING (CRITICAL)
+    // 🎯 STEP 5: WAGERING ONLY FOR REFERRED USERS
     // =========================================================
 
     const customer = await Customer.findById(deposit.customerId).session(session);
@@ -410,22 +408,23 @@ const approveDeposit = async (depositId) => {
       throw new ApiError(404, "Customer not found");
     }
 
-    const WAGER_MULTIPLIER = settings?.deposit?.wagerMultiplier || 2;
+    // 👉 APPLY WAGER ONLY IF USER IS REFERRED
+    if (customer.referredBy) {
 
-    // 📊 update wagering
-    customer.wagering.totalDeposit += deposit.amount;
+      const WAGER_MULTIPLIER = settings?.deposit?.wagerMultiplier || 2;
 
-    const newRequiredWager = deposit.amount * WAGER_MULTIPLIER;
+      customer.wagering.totalDeposit += deposit.amount;
 
-    customer.wagering.requiredWager += newRequiredWager;
+      const newRequiredWager = deposit.amount * WAGER_MULTIPLIER;
 
-    // 🔒 lock funds
-    customer.wagering.lockedAmount += deposit.amount;
+      customer.wagering.requiredWager += newRequiredWager;
 
-    // ❗ reset completion (important)
-    customer.wagering.isWagerCompleted = false;
+      customer.wagering.lockedAmount += deposit.amount;
 
-    await customer.save({ session });
+      customer.wagering.isWagerCompleted = false;
+
+      await customer.save({ session });
+    }
 
     // =========================================================
     // 🎁 STEP 6: REFERRAL LOGIC
@@ -440,79 +439,76 @@ const approveDeposit = async (depositId) => {
 
       if (referral) {
 
-        // 📊 accumulate deposit
+        // 📊 accumulate total deposit
         referral.totalDeposit += deposit.amount;
 
         const MIN_DEPOSIT = settings.deposit.minAmount;
         const REWARD_AMOUNT = settings.reward.referrerAmount;
 
-        // 🎯 eligibility check
+        // ✅ FIX: use totalDeposit (not single deposit)
         if (referral.totalDeposit >= MIN_DEPOSIT) {
 
-          // 🔐 OPTIONAL (VERY IMPORTANT FOR YOU)
-          // reward only after wagering complete
-          if (!customer.wagering.isWagerCompleted) {
-            await referral.save({ session });
-          } else {
+          // 🔎 Get/Create referrer wallet
+          let referrerWallet = await Wallet.findOne({
+            customerId: referral.referrer
+          }).session(session);
 
-            // 🔎 Get/Create referrer wallet
-            let referrerWallet = await Wallet.findOne({
-              customerId: referral.referrer
-            }).session(session);
-
-            if (!referrerWallet) {
-              referrerWallet = await Wallet.create([{
-                customerId: referral.referrer,
-                balance: 0,
-                lockedBalance: 0
-              }], { session });
-              referrerWallet = referrerWallet[0];
-            }
-
-            const refBalanceBefore = referrerWallet.balance;
-
-            // 💰 credit reward
-            referrerWallet.balance += REWARD_AMOUNT;
-            await referrerWallet.save({ session });
-
-            // 🧾 referral transaction
-            await WalletTransaction.create([{
+          if (!referrerWallet) {
+            referrerWallet = await Wallet.create([{
               customerId: referral.referrer,
-              walletId: referrerWallet._id,
-              type: "credit",
-              reason: "referral_bonus",
-              amount: REWARD_AMOUNT,
-              balanceBefore: refBalanceBefore,
-              balanceAfter: referrerWallet.balance,
-              referenceType: "referral",
-              referenceId: referral._id,
-              txnId: generateTxnId(),
+              balance: 0,
+              lockedBalance: 0
             }], { session });
-
-            // ✅ mark rewarded
-            referral.status = "REWARDED";
-            referral.rewardedAt = new Date();
-
-            await referral.save({ session });
+            referrerWallet = referrerWallet[0];
           }
+
+          const refBalanceBefore = referrerWallet.balance;
+
+          // 💰 Credit reward
+          referrerWallet.balance += REWARD_AMOUNT;
+          await referrerWallet.save({ session });
+
+          // 🧾 Transaction
+          await WalletTransaction.create([{
+            customerId: referral.referrer,
+            walletId: referrerWallet._id,
+            type: "credit",
+            reason: "referral_bonus",
+            amount: REWARD_AMOUNT,
+            balanceBefore: refBalanceBefore,
+            balanceAfter: referrerWallet.balance,
+            referenceType: "referral",
+            referenceId: referral._id,
+            txnId: generateTxnId(),
+          }], { session });
+
+          // =====================================================
+          // 🎯 APPLY WAGERING TO REFERRER ALSO (IMPORTANT)
+          // =====================================================
+
+          const referrer = await Customer.findById(referral.referrer).session(session);
+
+          if (referrer) {
+            const WAGER_MULTIPLIER = settings?.deposit?.wagerMultiplier || 2;
+
+            referrer.wagering.requiredWager += REWARD_AMOUNT * WAGER_MULTIPLIER;
+            referrer.wagering.lockedAmount += REWARD_AMOUNT;
+            referrer.wagering.isWagerCompleted = false;
+
+            await referrer.save({ session });
+          }
+
+          // ✅ mark rewarded
+          referral.status = "REWARDED";
+          referral.rewardedAt = new Date();
 
         } else {
           referral.status = "PENDING";
-          await referral.save({ session });
         }
+
+        await referral.save({ session });
       }
     }
-
-    // =========================================================
-    // 🔔 STEP 7: NOTIFICATION
-    // =========================================================
-
-    await Notification.create([{
-      customerId: deposit.customerId,
-      type: "DEPOSIT_SUCCESS",
-      title: "Deposit Successful",
-      message: `₹${deposit.amount} added to your wallet`
-    }], { session });
 
     // =========================================================
     // ✅ FINAL COMMIT
