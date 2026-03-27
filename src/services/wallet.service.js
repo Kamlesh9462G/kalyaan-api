@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Wallet, WalletTransaction, Deposit, Withdrawal, Customer,Notification } = require('../models/index')
+const { Wallet, WalletTransaction, Deposit, Withdrawal, Customer, Notification, ReferralSettings, Referral } = require('../models/index')
 
 const generateTxnId = () => {
   return `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -339,6 +339,10 @@ const approveDeposit = async (depositId) => {
   session.startTransaction();
 
   try {
+    // =========================================================
+    // 🔍 STEP 1: FETCH & VALIDATE DEPOSIT
+    // =========================================================
+
     const deposit = await Deposit.findById(depositId).session(session);
 
     if (!deposit) throw new ApiError(404, "Deposit not found");
@@ -347,29 +351,36 @@ const approveDeposit = async (depositId) => {
       throw new ApiError(400, "Deposit already processed");
     }
 
-    // 🔐 Lock update (idempotency safe)
+    // =========================================================
+    // ✅ STEP 2: MARK DEPOSIT SUCCESS
+    // =========================================================
+
     deposit.status = "success";
     deposit.creditedAt = new Date();
     await deposit.save({ session });
 
-    // 🔎 Get/Create wallet
+    // =========================================================
+    // 💰 STEP 3: CREDIT USER WALLET
+    // =========================================================
+
     let wallet = await Wallet.findOne({ customerId: deposit.customerId }).session(session);
 
     if (!wallet) {
       wallet = await Wallet.create([{
         customerId: deposit.customerId,
-        balance: 0
+        balance: 0,
+        lockedBalance: 0
       }], { session });
-
       wallet = wallet[0];
     }
 
     const balanceBefore = wallet.balance;
+
     wallet.balance += deposit.amount;
 
     await wallet.save({ session });
 
-    // 🧾 Transaction entry
+    // 🧾 Deposit transaction
     await WalletTransaction.create([{
       customerId: deposit.customerId,
       walletId: wallet._id,
@@ -383,10 +394,129 @@ const approveDeposit = async (depositId) => {
       txnId: generateTxnId(),
     }], { session });
 
+    // =========================================================
+    // ⚙️ STEP 4: FETCH SETTINGS (ONCE)
+    // =========================================================
 
-    await Notification.create({})
+    const settings = await ReferralSettings.findOne().session(session);
 
+    // =========================================================
+    // 🎯 STEP 5: UPDATE WAGERING (CRITICAL)
+    // =========================================================
 
+    const customer = await Customer.findById(deposit.customerId).session(session);
+
+    if (!customer) {
+      throw new ApiError(404, "Customer not found");
+    }
+
+    const WAGER_MULTIPLIER = settings?.deposit?.wagerMultiplier || 2;
+
+    // 📊 update wagering
+    customer.wagering.totalDeposit += deposit.amount;
+
+    const newRequiredWager = deposit.amount * WAGER_MULTIPLIER;
+
+    customer.wagering.requiredWager += newRequiredWager;
+
+    // 🔒 lock funds
+    customer.wagering.lockedAmount += deposit.amount;
+
+    // ❗ reset completion (important)
+    customer.wagering.isWagerCompleted = false;
+
+    await customer.save({ session });
+
+    // =========================================================
+    // 🎁 STEP 6: REFERRAL LOGIC
+    // =========================================================
+
+    if (settings?.isReferralActive) {
+
+      const referral = await Referral.findOne({
+        referredUser: deposit.customerId,
+        status: { $ne: "REWARDED" }
+      }).session(session);
+
+      if (referral) {
+
+        // 📊 accumulate deposit
+        referral.totalDeposit += deposit.amount;
+
+        const MIN_DEPOSIT = settings.deposit.minAmount;
+        const REWARD_AMOUNT = settings.reward.referrerAmount;
+
+        // 🎯 eligibility check
+        if (referral.totalDeposit >= MIN_DEPOSIT) {
+
+          // 🔐 OPTIONAL (VERY IMPORTANT FOR YOU)
+          // reward only after wagering complete
+          if (!customer.wagering.isWagerCompleted) {
+            await referral.save({ session });
+          } else {
+
+            // 🔎 Get/Create referrer wallet
+            let referrerWallet = await Wallet.findOne({
+              customerId: referral.referrer
+            }).session(session);
+
+            if (!referrerWallet) {
+              referrerWallet = await Wallet.create([{
+                customerId: referral.referrer,
+                balance: 0,
+                lockedBalance: 0
+              }], { session });
+              referrerWallet = referrerWallet[0];
+            }
+
+            const refBalanceBefore = referrerWallet.balance;
+
+            // 💰 credit reward
+            referrerWallet.balance += REWARD_AMOUNT;
+            await referrerWallet.save({ session });
+
+            // 🧾 referral transaction
+            await WalletTransaction.create([{
+              customerId: referral.referrer,
+              walletId: referrerWallet._id,
+              type: "credit",
+              reason: "referral_bonus",
+              amount: REWARD_AMOUNT,
+              balanceBefore: refBalanceBefore,
+              balanceAfter: referrerWallet.balance,
+              referenceType: "referral",
+              referenceId: referral._id,
+              txnId: generateTxnId(),
+            }], { session });
+
+            // ✅ mark rewarded
+            referral.status = "REWARDED";
+            referral.rewardedAt = new Date();
+
+            await referral.save({ session });
+          }
+
+        } else {
+          referral.status = "PENDING";
+          await referral.save({ session });
+        }
+      }
+    }
+
+    // =========================================================
+    // 🔔 STEP 7: NOTIFICATION
+    // =========================================================
+
+    await Notification.create([{
+      customerId: deposit.customerId,
+      type: "DEPOSIT_SUCCESS",
+      title: "Deposit Successful",
+      message: `₹${deposit.amount} added to your wallet`
+    }], { session });
+
+    // =========================================================
+    // ✅ FINAL COMMIT
+    // =========================================================
 
     await session.commitTransaction();
     session.endSession();
@@ -423,20 +553,98 @@ const getWithdrawRequests = async (filterQuery) => {
   }
 }
 const createWithdraw = async (customerId, payload) => {
-
   const { amount, method, accountDetails } = payload;
 
+  // 🔎 Get wallet
   const wallet = await Wallet.findOne({ customerId });
 
-  if (!wallet || wallet.balance < amount) {
-    throw new ApiError(httpStatus.status.BAD_REQUEST, "Insufficient balance");
+  if (!wallet) {
+    throw new ApiError(400, "Wallet not found");
   }
 
+  // 🔎 Get customer (for wagering + restrictions)
+  const customer = await Customer.findById(customerId);
+
+  if (!customer) {
+    throw new ApiError(404, "Customer not found");
+  }
+
+  // 🚫 1. Check withdraw blocked by admin
+  if (customer.isWithdrawBlocked) {
+    throw new ApiError(
+      403,
+      "Withdrawals are temporarily restricted on your account. Please contact support."
+    );
+  }
+
+  // 🚫 2. Check account status
+  if (customer.status !== "active") {
+    throw new ApiError(
+      403,
+      "Your account is not active. Withdrawal is not allowed."
+    );
+  }
+
+  // 🚫 3. Wagering condition check (ANTI-FRAUD)
+  if (!customer.wagering?.isWagerCompleted) {
+    const remaining =
+      (customer.wagering.requiredWager || 0) -
+      (customer.wagering.completedWager || 0);
+
+    throw new ApiError(
+      400,
+      `Please complete your gameplay requirement before withdrawing. ₹${remaining} more needs to be played.`
+    );
+  }
+
+  // 🚫 4. Locked balance check
+  if (wallet.lockedBalance && wallet.lockedBalance > 0) {
+    throw new ApiError(
+      400,
+      "Some amount in your wallet is locked. Complete required activity to unlock withdrawal."
+    );
+  }
+
+  // 🚫 5. Balance check
+  if (wallet.balance < amount) {
+    throw new ApiError(
+      400,
+      "Insufficient balance for withdrawal"
+    );
+  }
+
+  // 🚫 6. Minimum withdrawal check (optional)
+  const MIN_WITHDRAW = 100; // you can move this to settings
+  if (amount < MIN_WITHDRAW) {
+    throw new ApiError(
+      400,
+      `Minimum withdrawal amount is ₹${MIN_WITHDRAW}`
+    );
+  }
+
+  // 🚫 7. Prevent suspicious quick withdrawal (optional anti-fraud)
+  const lastDeposit = await Deposit.findOne({ customerId })
+    .sort({ createdAt: -1 });
+
+  if (lastDeposit) {
+    const diffMinutes =
+      (Date.now() - new Date(lastDeposit.createdAt)) / (1000 * 60);
+
+    if (diffMinutes < 5) {
+      throw new ApiError(
+        400,
+        "Withdrawal is temporarily restricted. Please wait a few minutes after deposit."
+      );
+    }
+  }
+
+  // ✅ Create withdrawal request
   const withdraw = await Withdrawal.create({
     customerId,
     amount,
     method,
-    accountDetails
+    accountDetails,
+    status: "pending"
   });
 
   return withdraw;

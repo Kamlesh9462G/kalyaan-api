@@ -8,7 +8,8 @@ const {
     WalletTransaction,
     Market,
     MarketBetType,
-    BetRate
+    BetRate,
+    Customer
 } = require("../models");
 
 const ApiError = require("../utils/ApiError");
@@ -165,6 +166,33 @@ const placeBet = async (customerId, payload) => {
         const balanceAfter = wallet.balance;
 
         await wallet.save({ session });
+
+        // =========================================================
+        // 🎯 STEP 5.1: UPDATE WAGERING (CRITICAL)
+        // =========================================================
+
+        const customer = await Customer.findById(customerId).session(session);
+
+        if (!customer) {
+            throw new ApiError(404, "Customer not found");
+        }
+
+        // 📊 update wager progress
+        customer.wagering.completedWager += totalAmount;
+        customer.wagering.totalBetAmount += totalAmount;
+
+        // 🎯 check if completed
+        if (
+            customer.wagering.completedWager >=
+            customer.wagering.requiredWager
+        ) {
+            customer.wagering.isWagerCompleted = true;
+
+            // 🔓 unlock funds
+            customer.wagering.lockedAmount = 0;
+        }
+
+        await customer.save({ session });
 
         // 6️⃣ Create BetSlip
         const betSlip = await BetSlip.create([{

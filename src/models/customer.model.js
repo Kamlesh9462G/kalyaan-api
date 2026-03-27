@@ -37,6 +37,36 @@ const customerSchema = new mongoose.Schema(
             default: 0,
             min: 0
         },
+        // 🔹 REFERRAL SYSTEM
+        referralCode: {
+            type: String,
+            unique: true,
+            index: true
+        },
+
+        referredBy: {
+            type: mongoose.Schema.Types.ObjectId,
+
+        },
+
+        referralCount: {
+            type: Number,
+            default: 0
+        },
+
+        // 🔹 WAGERING SYSTEM (ANTI-FRAUD)
+        wagering: {
+            totalDeposit: { type: Number, default: 0 },
+            totalBetAmount: { type: Number, default: 0 },
+
+            requiredWager: { type: Number, default: 0 },
+            completedWager: { type: Number, default: 0 },
+
+            isWagerCompleted: { type: Boolean, default: false },
+
+            lockedAmount: { type: Number, default: 0 }
+        },
+
 
         // 🔹 ACCOUNT STATUS
         status: {
@@ -112,5 +142,18 @@ const customerSchema = new mongoose.Schema(
 // customerSchema.virtual("isPlayable").get(function () {
 //     return this.status === "active" && !this.isDeleted;
 // });
+
+customerSchema.pre("save", async function () {
+    if (this.isNew && !this.referralCode) {
+        const random = Math.floor(1000 + Math.random() * 9000);
+        this.referralCode = (this.email?.slice(0, 3) || "USR").toUpperCase() + random;
+    }
+
+    // if (this.isModified("mpin") && this.mpin) {
+    //     this.mpin = await bcrypt.hash(this.mpin, 10);
+    // }
+
+    // next();
+});
 
 module.exports = mongoose.model("Customer", customerSchema);

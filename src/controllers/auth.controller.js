@@ -4,9 +4,9 @@ const catchAsync = require("../utils/catchAsync");
 const { authService, tokenService } = require("../services/index");
 
 const sendOtp = catchAsync(async (req, res) => {
-  const { email, purpose = "AUTH" } = req.body;
+  const { email, purpose = "AUTH",referralCode } = req.body;
 
-  const result = await authService.sendOtp(email, purpose);
+  const result = await authService.sendOtp(email, purpose,referralCode);
 
   res.status(httpStatus.status.OK).json({
     success: true,
@@ -17,9 +17,9 @@ const sendOtp = catchAsync(async (req, res) => {
 });
 
 const verifyOtp = catchAsync(async (req, res) => {
-  const { email, otp, purpose = "AUTH" } = req.body;
+  const { email, otp, purpose = "AUTH",referralCode } = req.body;
 
-  const result = await authService.verifyOtp({ email, otp, purpose });
+  const result = await authService.verifyOtp({ email, otp, purpose,referralCode });
 
   res.status(httpStatus.status.OK).json({
     success: true,

@@ -2,13 +2,25 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 
-const { Customer, Wallet, CustomerSession } = require("../models/index");
+const { Customer, Wallet, CustomerSession,Referral } = require("../models/index");
 const otpService = require("./otp.service");
 const tokenService = require("./token.service");
 const ApiError = require("../utils/ApiError");
 const httpStatus = require("http-status");
 
-const sendOtp = async (email, purpose) => {
+const sendOtp = async (email, purpose, referralCode) => {
+
+  // 🔗 Validate referral only if user not already registered
+  const existingCustomer = await Customer.findOne({ email });
+
+  if (!existingCustomer && referralCode) {
+    const referrer = await Customer.findOne({ referralCode });
+
+    if (!referrer) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid referral code");
+    }
+  }
+
   await otpService.generateAndSendOtp(email, purpose);
 
   return {
@@ -17,22 +29,49 @@ const sendOtp = async (email, purpose) => {
   };
 };
 
-const verifyOtp = async ({ email, otp, purpose }) => {
+const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
   await otpService.verifyOtp(email, otp, purpose);
 
-  // 🔍 Get or create customer
   let customer = await Customer.findOne({ email }).select("+mpin");
   let isNewCustomer = false;
+  let referrer = null;
 
+  // 👤 NEW USER FLOW
   if (!customer) {
+
+    // 🔗 validate referral again (secure)
+    if (referralCode) {
+      referrer = await Customer.findOne({ referralCode });
+
+      if (!referrer) {
+        throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid referral code");
+      }
+    }
+
+    // create customer
     customer = await Customer.create({
       email,
       mpin: null,
+      referredBy: referrer?._id || null
     });
+
     isNewCustomer = true;
+
+    // 📊 create referral record
+    if (referrer) {
+      await Referral.create({
+        referrer: referrer._id,
+        referredUser: customer._id,
+        status: "PENDING"
+      });
+
+      await Customer.findByIdAndUpdate(referrer._id, {
+        $inc: { referralCount: 1 }
+      });
+    }
   }
 
-  // 💰 Get or create wallet
+  // 💰 WALLET (safe for both new + existing)
   let wallet = await Wallet.findOne({ customerId: customer._id });
 
   if (!wallet) {
@@ -46,7 +85,6 @@ const verifyOtp = async ({ email, otp, purpose }) => {
 
   let resetToken = null;
 
-  // 🔁 FORGOT MPIN FLOW
   if (purpose === "FORGOT_MPIN") {
     resetToken = jwt.sign(
       { customerId: customer._id, type: "RESET_MPIN" },
@@ -55,7 +93,6 @@ const verifyOtp = async ({ email, otp, purpose }) => {
     );
   }
 
-  // 🎯 Unified response
   return {
     customerId: customer._id,
     name: customer.name,
@@ -63,7 +100,7 @@ const verifyOtp = async ({ email, otp, purpose }) => {
     isNewCustomer,
     isMpinSet: Boolean(customer.mpin),
     walletBalance: wallet.balance,
-    resetToken, // will be null for normal flow
+    resetToken,
   };
 };
 
@@ -156,11 +193,11 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
         { customerId: customerId, isActive: true },
         { isActive: false, loggedOutAt: new Date() }
       );
-      
+
       // Note: Blacklisting all tokens would require storing them, which is complex
       // For now, deactivating sessions will prevent refresh token usage
       // Access tokens will still work until expiry, but without refresh capability
-      
+
       return {
         message: "Logged out from all devices successfully",
         data: { timestamp: new Date().toISOString() }
@@ -184,11 +221,11 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
     if (refreshToken) {
       try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-        
+
         if (decoded.type === "refresh" && decoded.deviceId && decoded.customerId) {
           // Blacklist the refresh token
           await tokenService.blacklistRefreshToken(refreshToken, decoded.customerId);
-          
+
           // Invalidate the specific session
           await CustomerSession.findOneAndUpdate(
             {
@@ -204,7 +241,7 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
         }
       } catch (error) {
         console.log("Refresh token processing error:", error);
-        
+
         // If token verification fails but we have customerId, deactivate all sessions for that customer
         if (customerId) {
           await CustomerSession.updateMany(
