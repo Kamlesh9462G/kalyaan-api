@@ -14,7 +14,7 @@ const guideRoute = require('./guide.route')
 const gameBetGuideRoute = require('./gameBetGuide.route')
 const faqRoute = require('./faq.route')
 const merchantVpaRoute = require('./merchantVpa.route')
-
+const referralRoute = require('./referral.route')
 
 const router = express.Router();
 
@@ -78,6 +78,10 @@ const defaultRoutes = [
     {
         path: '/merchant-vpas',
         route: merchantVpaRoute
+    },
+    {
+        path: '/referral',
+        route: referralRoute
     }
 ];
 
