@@ -65,7 +65,7 @@ const walletTransactionSchema = new mongoose.Schema(
   // 🔗 REFERENCE
   referenceType: {
     type: String,
-    enum: ["betSlip", "betItem", "deposit", "withdraw", "manual","referral1"],
+    enum: ["betSlip", "betItem", "deposit", "withdraw", "manual","referral"],
     default: null
   },
 
