@@ -29,8 +29,8 @@ const getReferralHistory = catchAsync(async (req, res) => {
     return res.status(httpStatus.status.OK).json({
         success: true,
         status: httpStatus.status.OK,
-        message: "Referral settings fetched successfully",
-        data: settings,
+        message: "Referral history fetched successfully",
+        data: history,
     });
 })
 
