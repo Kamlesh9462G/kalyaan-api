@@ -15,6 +15,7 @@ const gameBetGuideRoute = require('./gameBetGuide.route')
 const faqRoute = require('./faq.route')
 const merchantVpaRoute = require('./merchantVpa.route')
 const referralRoute = require('./referral.route')
+const favouriteRoute = require('./favourite.route')
 
 const router = express.Router();
 
@@ -82,6 +83,10 @@ const defaultRoutes = [
     {
         path: '/referral',
         route: referralRoute
+    },
+    {
+        path: '/favourites',
+        route: favouriteRoute
     }
 ];
 
