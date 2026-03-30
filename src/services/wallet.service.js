@@ -512,12 +512,12 @@ const approveDeposit = async (depositId) => {
     await Notification.create([{
       customerId: deposit.customerId,
       title: "Deposit Successful 💰",
-      body: `Your deposit of ₹${amount} has been successfully credited to your wallet.`,
+      body: `Your deposit of ₹${deposit.amount} has been successfully credited to your wallet.`,
       type: "DEPOSIT_SUCCESS",
       category: "transactional",
       channels: ["push", "in_app"],
       data: {
-        amount,
+        amount: deposit.amount,
         transactionId,
         status: "success"
       },
@@ -560,12 +560,12 @@ const rejectDeposit = async (depositId) => {
 
     customerId: deposit.customerId,
     title: "Deposit Failed ❌",
-    body: `Your deposit of ₹${amount} could not be processed. Please try again.`,
+    body: `Your deposit of ₹${deposit.amount} could not be processed. Please try again.`,
     type: "DEPOSIT_FAILED",
     category: "transactional",
     channels: ["in_app"],
     data: {
-      amount,
+      deposit.amount,
       status: "failed",
       reason: "Unknown error"
     },
@@ -728,12 +728,12 @@ const approveWithdraw = async (withdrawId, adminId, body) => {
     await Notification.create([{
       customerId: withdraw.customerId,
       title: "Deposit Successful 💰",
-      body: `Your deposit of ₹${amount} has been successfully credited to your wallet.`,
+      body: `Your deposit of ₹${withdraw.amount} has been successfully credited to your wallet.`,
       type: "DEPOSIT_SUCCESS",
       category: "transactional",
       channels: ["in_app"],
       data: {
-        amount,
+        amount: withdraw.amount,
         transactionId: body.referenceId,
         status: "success"
       },
@@ -776,12 +776,12 @@ const rejectWithdraw = async (withdrawId, adminId, remark) => {
     await Notification.create([{
       customerId: withdraw.customerId,
       title: "Withdrawal Rejected ❌",
-      body: `Your withdrawal request of ₹${amount} was rejected. Reason: ${reason}`,
+      body: `Your withdrawal request of ₹${withdraw.amount} was rejected. Reason: ${remark}`,
       type: "WITHDRAW_REJECTED",
       category: "transactional",
       channels: ["in_app"],
       data: {
-        amount,
+        amount: withdraw.amount,
         status: "rejected",
         remark
       },
