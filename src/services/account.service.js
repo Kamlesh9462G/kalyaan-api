@@ -23,6 +23,7 @@ const addBankAccount = async (bankAccountData) => {
             );
         }
 
+        bankAccountData.status = "verified"; // New accounts are verified by default
         return await BankAccount.create(bankAccountData);
     } catch (error) {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
@@ -105,6 +106,7 @@ const addUpiAccount = async (upiAccountData) => {
             );
         }
 
+        upiAccountData.status = "verified"; // New accounts are verified by default
         return await UpiAccount.create(upiAccountData);
     } catch (error) {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);

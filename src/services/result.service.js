@@ -150,18 +150,59 @@ const settleOpenBets = async (result, session, req) => {
         status: "pending",
         betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] }
     })
+    // const betItems = await BetItem.find({
+    //     marketId,
+    //     session: "open",  // Only open session bets
+    //     status: "pending",
+    //     betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] }
+    // }).populate({
+    //     path: 'betSlipId',
+    //     populate: {
+    //         path: 'betTypeId',
+    //         model: 'BetType'
+    //     }
+    // }).session(session);
+
+
+    const now = new Date();
+
+    // Convert to IST time
+    const istNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    // Start of IST day
+    const startOfDayIST = new Date(istNow);
+    startOfDayIST.setHours(0, 0, 0, 0);
+
+    // End of IST day
+    const endOfDayIST = new Date(istNow);
+    endOfDayIST.setHours(23, 59, 59, 999);
+
+    // Convert back to UTC
+    const startOfDayUTC = new Date(startOfDayIST.toISOString());
+    const endOfDayUTC = new Date(endOfDayIST.toISOString());
+
     const betItems = await BetItem.find({
         marketId,
-        session: "open",  // Only open session bets
+        session: "open",
         status: "pending",
-        betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] }
-    }).populate({
-        path: 'betSlipId',
-        populate: {
-            path: 'betTypeId',
-            model: 'BetType'
+        betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] },
+
+        createdAt: {
+            $gte: startOfDayUTC,
+            $lte: endOfDayUTC
         }
-    }).session(session);
+    })
+        .populate({
+            path: 'betSlipId',
+            populate: {
+                path: 'betTypeId',
+                model: 'BetType'
+            }
+        })
+        .session(session);
+
 
     console.log(betItems)
     if (betItems.length === 0) return;
@@ -381,6 +422,26 @@ const settleOpenBets = async (result, session, req) => {
 const settleCloseBets = async (result, session, req) => {
     const { marketId, closeDigit, closePanna, openDigit, openPanna } = result;
 
+
+    const now = new Date();
+
+    // Convert to IST time
+    const istNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    // Start of IST day
+    const startOfDayIST = new Date(istNow);
+    startOfDayIST.setHours(0, 0, 0, 0);
+
+    // End of IST day
+    const endOfDayIST = new Date(istNow);
+    endOfDayIST.setHours(23, 59, 59, 999);
+
+    // Convert back to UTC
+    const startOfDayUTC = new Date(startOfDayIST.toISOString());
+    const endOfDayUTC = new Date(endOfDayIST.toISOString());
+
     // Find all bet items for this market that need close result
     const betItems = await BetItem.find({
         marketId,
@@ -396,7 +457,11 @@ const settleCloseBets = async (result, session, req) => {
                 session: null,
                 betTypeCode: { $in: ['JD', 'HS', 'FS'] }
             }
-        ]
+        ],
+        createdAt: {
+            $gte: startOfDayUTC,
+            $lte: endOfDayUTC
+        }
     }).populate({
         path: 'betSlipId',
         populate: {
@@ -916,25 +981,25 @@ const getCurrentDayResult = async (filterQuery = {}) => {
     try {
         // Build query based on filter
         const query = {};
-        
+
         if (filterQuery.date) {
             query.date = filterQuery.date;
         }
-        
+
         if (filterQuery.marketId) {
             query.marketId = filterQuery.marketId;
         }
-        
+
         const results = await Result.find(query)
             .populate({ path: 'marketId', select: 'name openTime closeTime status' })
             .populate({ path: 'declaredBy', select: 'name email' })
             .sort({ date: -1, createdAt: -1 })
             .lean();
-            
+
         return results || [];
     } catch (error) {
         throw new ApiError(
-            httpStatus.status.INTERNAL_SERVER_ERROR, 
+            httpStatus.status.INTERNAL_SERVER_ERROR,
             error.message || "Failed to fetch results"
         );
     }
@@ -942,75 +1007,75 @@ const getCurrentDayResult = async (filterQuery = {}) => {
 
 
 const getMarketResultsBoard = async (date) => {
-  // ✅ ensure correct format (very important)
-  const formattedDate = date || new Date().toISOString().split("T")[0];
+    // ✅ ensure correct format (very important)
+    const formattedDate = date || new Date().toISOString().split("T")[0];
 
-  const data = await Market.aggregate([
-    {
-      $match: {
-        status: "active",
-        isDeleted: false
-      }
-    },
-
-    // ✅ lookup using DATE (not createdAt)
-    {
-      $lookup: {
-        from: "results",
-        let: {
-          marketId: "$_id"
-        },
-        pipeline: [
-          {
+    const data = await Market.aggregate([
+        {
             $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$marketId", "$$marketId"] },
-                  { $eq: ["$date", formattedDate] } // Use formattedDate directly here
-                ]
-              }
+                status: "active",
+                isDeleted: false
             }
-          }
-        ],
-        as: "result"
-      }
-    },
+        },
 
-    // ✅ convert array → object
-    {
-      $addFields: {
-        result: { $first: "$result" }
-      }
-    },
+        // ✅ lookup using DATE (not createdAt)
+        {
+            $lookup: {
+                from: "results",
+                let: {
+                    marketId: "$_id"
+                },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$marketId", "$$marketId"] },
+                                    { $eq: ["$date", formattedDate] } // Use formattedDate directly here
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "result"
+            }
+        },
 
-    // ✅ map fields with fallback
-    {
-      $addFields: {
-        openPanna: { $ifNull: ["$result.openPanna", "***"] },
-        openDigit: { $ifNull: ["$result.openDigit", "*"] },
-        closeDigit: { $ifNull: ["$result.closeDigit", "*"] },
-        closePanna: { $ifNull: ["$result.closePanna", "***"] }
-      }
-    },
+        // ✅ convert array → object
+        {
+            $addFields: {
+                result: { $first: "$result" }
+            }
+        },
 
-    {
-      $project: {
-        name: 1,
-        "timings.openTime": 1,
-        "timings.closeTime": 1,
-        openPanna: 1,
-        openDigit: 1,
-        closeDigit: 1,
-        closePanna: 1
-      }
-    },
+        // ✅ map fields with fallback
+        {
+            $addFields: {
+                openPanna: { $ifNull: ["$result.openPanna", "***"] },
+                openDigit: { $ifNull: ["$result.openDigit", "*"] },
+                closeDigit: { $ifNull: ["$result.closeDigit", "*"] },
+                closePanna: { $ifNull: ["$result.closePanna", "***"] }
+            }
+        },
 
-    {
-      $sort: { "timings.openTime": 1 }
-    }
-  ]);
+        {
+            $project: {
+                name: 1,
+                "timings.openTime": 1,
+                "timings.closeTime": 1,
+                openPanna: 1,
+                openDigit: 1,
+                closeDigit: 1,
+                closePanna: 1
+            }
+        },
 
-  return data;
+        {
+            $sort: { "timings.openTime": 1 }
+        }
+    ]);
+
+    return data;
 };
 
 

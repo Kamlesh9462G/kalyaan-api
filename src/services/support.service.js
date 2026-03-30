@@ -97,11 +97,11 @@ const closeTicket = async (ticketId, adminId, remark) => {
         const ticket = await SupportTicket.findById(ticketId);
 
         if (!ticket) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Ticket not found");
+            throw new ApiError(httpStatus.status.NOT_FOUND, "Ticket not found");
         }
 
         if (ticket.status === "closed") {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Ticket already closed");
+            throw new ApiError(httpStatus.status.BAD_REQUEST, "Ticket already closed");
         }
 
         if (remark) {
