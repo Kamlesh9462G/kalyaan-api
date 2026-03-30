@@ -509,6 +509,21 @@ const approveDeposit = async (depositId) => {
       }
     }
 
+    await Notification.create([{
+      customerId: deposit.customerId,
+      title: "Deposit Successful 💰",
+      body: `Your deposit of ₹${amount} has been successfully credited to your wallet.`,
+      type: "DEPOSIT_SUCCESS",
+      category: "transactional",
+      channels: ["push", "in_app"],
+      data: {
+        amount,
+        transactionId,
+        status: "success"
+      },
+      status: "pending"
+    }], { session });
+
     // =========================================================
     // ✅ FINAL COMMIT
     // =========================================================
@@ -539,6 +554,25 @@ const rejectDeposit = async (depositId) => {
   deposit.creditedAt = new Date();
 
   await deposit.save();
+
+
+  await Notification.create([{
+
+    customerId: deposit.customerId,
+    title: "Deposit Failed ❌",
+    body: `Your deposit of ₹${amount} could not be processed. Please try again.`,
+    type: "DEPOSIT_FAILED",
+    category: "transactional",
+    channels: ["in_app"],
+    data: {
+      amount,
+      status: "failed",
+      reason: "Unknown error"
+    },
+    status: "pending"
+
+  }], { session });
+
 }
 const getWithdrawRequests = async (filterQuery) => {
   try {
@@ -690,6 +724,23 @@ const approveWithdraw = async (withdrawId, adminId, body) => {
 
     await withdraw.save({ session });
 
+
+    await Notification.create([{
+      customerId: withdraw.customerId,
+      title: "Deposit Successful 💰",
+      body: `Your deposit of ₹${amount} has been successfully credited to your wallet.`,
+      type: "DEPOSIT_SUCCESS",
+      category: "transactional",
+      channels: ["in_app"],
+      data: {
+        amount,
+        transactionId: body.referenceId,
+        status: "success"
+      },
+      status: "pending"
+    }], { session });
+
+
     await session.commitTransaction();
     session.endSession();
 
@@ -720,6 +771,23 @@ const rejectWithdraw = async (withdrawId, adminId, remark) => {
     withdraw.adminRemark = remark;
 
     await withdraw.save({ session });
+
+
+    await Notification.create([{
+      customerId: withdraw.customerId,
+      title: "Withdrawal Rejected ❌",
+      body: `Your withdrawal request of ₹${amount} was rejected. Reason: ${reason}`,
+      type: "WITHDRAW_REJECTED",
+      category: "transactional",
+      channels: ["in_app"],
+      data: {
+        amount,
+        status: "rejected",
+        remark
+      },
+      status: "pending"
+    }], { session });
+
 
     await session.commitTransaction();
     session.endSession();
