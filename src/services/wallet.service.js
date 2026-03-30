@@ -518,7 +518,6 @@ const approveDeposit = async (depositId) => {
       channels: ["push", "in_app"],
       data: {
         amount: deposit.amount,
-        transactionId,
         status: "success"
       },
       status: "pending"
