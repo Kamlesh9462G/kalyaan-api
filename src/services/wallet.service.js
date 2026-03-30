@@ -565,7 +565,7 @@ const rejectDeposit = async (depositId) => {
     category: "transactional",
     channels: ["in_app"],
     data: {
-      deposit.amount,
+      amount:deposit.amount,
       status: "failed",
       reason: "Unknown error"
     },
