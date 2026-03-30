@@ -10,8 +10,6 @@ const createTicket = async (ticketData) => {
     try {
 
         const ticket = await SupportTicket.create(ticketData);
-        console.log(ticket)
-
         await TicketMessage.create({
             ticketId: ticket._id,
             senderType: "user",
@@ -30,8 +28,6 @@ const createTicket = async (ticketData) => {
 
 // USER REPLY
 const replyToTicket = async ({ ticketId, senderId, message }) => {
-
-    console.log(ticketId, senderId, message)
     try {
 
         if (!mongoose.Types.ObjectId.isValid(ticketId)) {

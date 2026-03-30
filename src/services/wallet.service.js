@@ -19,7 +19,6 @@ const getTransactions = async (customerId) => {
 }
 
 const getCustomerWallet = async (customerId) => {
-  console.log(customerId)
   try {
     return await Wallet.find({ customerId: customerId })
   } catch (error) {

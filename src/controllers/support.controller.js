@@ -6,8 +6,6 @@ const catchAsync = require('../utils/catchAsync');
 const { supportService } = require('../services/index');
 
 const createTicket = async (req, res) => {
-    console.log(req.body)
-    console.log(req.customer)
     req.body["customerId"] = req.customer.customerId;
 
     const data = await supportService.createTicket(req.body);

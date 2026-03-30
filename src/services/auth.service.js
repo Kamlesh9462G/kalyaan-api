@@ -272,8 +272,6 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
           );
         }
       } catch (error) {
-        console.log("Refresh token processing error:", error);
-
         // If token verification fails but we have customerId, deactivate all sessions for that customer
         if (customerId) {
           await CustomerSession.updateMany(
@@ -290,7 +288,6 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
         { customerId: customerId, isActive: true },
         { isActive: false, loggedOutAt: new Date() }
       );
-      console.log(`User ${customerId} logged out without tokens`);
     }
 
     return {

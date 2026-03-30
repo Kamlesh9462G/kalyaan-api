@@ -15,7 +15,6 @@ const {
 const ApiError = require("../utils/ApiError");
 
 const placeBet = async (customerId, payload) => {
-    console.log(customerId, payload)
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -45,7 +44,6 @@ const placeBet = async (customerId, payload) => {
 
         const betTypeCode = betType.code; // IMPORTANT (add code in BetType)
 
-        console.log(betTypeCode)
 
         // 3️⃣ Session Validation (skip for sangam)
         if (!["HS", "FS", "JD"].includes(betTypeCode)) {

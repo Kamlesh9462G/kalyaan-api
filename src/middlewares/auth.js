@@ -5,7 +5,6 @@ const { customerService, deviceService } = require('../services');
 const {BlacklistedToken,CustomerSession} = require('../models/index');
 
 const auth = () => catchAsync(async (req, res, next) => {
-  console.log("Auth middleware called");
   const token = req.headers.authorization?.replace('Bearer ', '');
   
   if (!token) {
@@ -30,25 +29,18 @@ const auth = () => catchAsync(async (req, res, next) => {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    console.log(payload)
     if (payload.type !== 'access') {
-      console.log("came inside this")
       return res.status(httpStatus.status.UNAUTHORIZED).json({
         success: false,
         status: httpStatus.status.UNAUTHORIZED,
         message: 'Invalid token type'
       });
     }
-
-    console.log("came here")
-
     // Optional: Check if session is still active
     const session = await CustomerSession.findOne({
       customerId: payload.customerId,
       isActive: true,
     });
-
-    console.log(session)
 
     // If you want to also check if ANY session is active (not just device-specific)
     // This ensures if user logged out from all devices, all tokens are invalid

@@ -4,7 +4,6 @@ const catchAsync = require('../utils/catchAsync');
 const { PaymentFeature } = require('../models/index');
 
 const addPaymentFeatures = async (paymentFeatureData) => {
-    console.log(paymentFeatureData)
     try {
         return await PaymentFeature.create(paymentFeatureData)
     } catch (error) {

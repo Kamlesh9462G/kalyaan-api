@@ -106,8 +106,6 @@ const getFavourites = async ({ customerId, query }) => {
         .sort({ date: -1 })
         .skip(skip)
         .limit(Number(limit));
-
-        console.log(filter)
     const total = await Favourite.countDocuments(filter);
 
     return {
