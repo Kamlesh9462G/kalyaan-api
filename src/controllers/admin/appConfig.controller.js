@@ -27,7 +27,7 @@ const getPaymentFeatures = catchAsync(async (req, res) => {
 const updatePaymentFeatures = catchAsync(async (req, res) => {
      const { id } = req.params;
      let filterQuery = { _id: new ObjectId(id) };
-    const data = await appConfigService.updatePaymentFeatures(req.body);
+    const data = await appConfigService.updatePaymentFeatures(filterQuery, req.body);
 
     return res.status(httpStatus.status.OK).json({
         success: true,
