@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { Market, Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType } = require('../models/index');
+const { Market, Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType, Notification } = require('../models/index');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -352,11 +352,11 @@ const settleOpenBets = async (result, session, req) => {
             notifications.push({
                 customerId: new mongoose.Types.ObjectId(customerId),
                 title: "Congratulations! 🎉 You Won",
-                body: `You won ₹${b.winAmount} on your bet. Keep playing!`,
+                body: `You won ₹${customerData.totalWinAmount} on your bet. Keep playing!`,
                 type: "BET_WON",
                 category: "betting",
                 channels: ["in_app"],
-                meta: {
+                data: {
                     note: `Open result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
                     marketId: marketId.toString(),
                     result: `${openPanna}-${openDigit}`,
@@ -650,7 +650,7 @@ const settleCloseBets = async (result, session, req) => {
                 channels: ["in_app"],
                 type: "BET_WON",
                 category: "betting",
-                meta: {
+                data: {
                     note: `Close result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
                     marketId: marketId.toString(),
                     result: `${closePanna}-${closeDigit}`,

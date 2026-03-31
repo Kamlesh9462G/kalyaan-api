@@ -596,9 +596,11 @@ const createWithdraw = async (customerId, payload) => {
   if (!customer) {
     throw new ApiError(404, "Customer not found");
   }
+  console.log(customer.isWithdrawBlocked)
 
   // 🚫 1. Check withdraw blocked by admin
   if (customer.isWithdrawBlocked) {
+    console.log("Withdraw blocked for customer", customerId)
     throw new ApiError(
       403,
       "Withdrawals are temporarily restricted on your account. Please contact support."
@@ -672,7 +674,7 @@ const createWithdraw = async (customerId, payload) => {
     amount,
     method,
     accountDetails,
-    status: "pending"
+    status: "requested"
   });
 
   return withdraw;

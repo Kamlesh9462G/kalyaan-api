@@ -16,6 +16,7 @@ const faqRoute = require('./faq.route')
 const merchantVpaRoute = require('./merchantVpa.route')
 const referralRoute = require('./referral.route')
 const favouriteRoute = require('./favourite.route')
+const notificationRoute = require('./notification.route')
 
 const router = express.Router();
 
@@ -87,6 +88,10 @@ const defaultRoutes = [
     {
         path: '/favourites',
         route: favouriteRoute
+    },
+    {
+        path: '/notifications',
+        route: notificationRoute
     }
 ];
 

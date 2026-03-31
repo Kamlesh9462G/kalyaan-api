@@ -37,7 +37,7 @@ const getCustomerWallet = catchAsync(async (req, res) => {
 })
 
 
-const createDeposit = async (req, res) => {
+const createDeposit = catchAsync(async (req, res) => {
 
     req.body["customerId"] = req.customer.customerId;
 
@@ -50,10 +50,10 @@ const createDeposit = async (req, res) => {
         data: data,
     });
 
-};
+});
 
 
-const createWithdraw = async (req, res) => {
+const createWithdraw = catchAsync(async (req, res) => {
 
     const data = await walletService.createWithdraw(
         req.customer.customerId,
@@ -69,7 +69,7 @@ const createWithdraw = async (req, res) => {
     });
 
 
-};
+});
 
 module.exports = {
     getTransactions,
