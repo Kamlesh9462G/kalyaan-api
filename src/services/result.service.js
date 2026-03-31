@@ -297,6 +297,7 @@ const settleOpenBets = async (result, session, req) => {
 
         const walletUpdates = [];
         const transactions = [];
+        const notifications = [];
 
         for (const [customerId, customerData] of customerWins) {
             const wallet = walletMap.get(customerId);
@@ -347,6 +348,29 @@ const settleOpenBets = async (result, session, req) => {
                     }))
                 }
             });
+
+            notifications.push({
+                customerId: new mongoose.Types.ObjectId(customerId),
+                title: "Congratulations! 🎉 You Won",
+                body: `You won ₹${b.winAmount} on your bet. Keep playing!`,
+                type: "BET_WON",
+                category: "betting",
+                channels: ["in_app"],
+                meta: {
+                    note: `Open result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
+                    marketId: marketId.toString(),
+                    result: `${openPanna}-${openDigit}`,
+                    session: "open",
+                    winningBets: customerData.betItems.map(b => ({
+                        betItemId: b.betItemId,
+                        winAmount: b.winAmount,
+                        digit: b.digit,
+                        betTypeCode: b.betTypeCode,
+                        session: b.session
+                    }))
+                },
+                status: "pending"
+            });
         }
 
         if (walletUpdates.length > 0) {
@@ -355,6 +379,10 @@ const settleOpenBets = async (result, session, req) => {
 
         if (transactions.length > 0) {
             await WalletTransaction.insertMany(transactions, { session });
+        }
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications, { session });
         }
     }
 
@@ -564,6 +592,7 @@ const settleCloseBets = async (result, session, req) => {
 
         const walletUpdates = [];
         const transactions = [];
+        const notifications = [];
 
         for (const [customerId, customerData] of customerWins) {
             const wallet = walletMap.get(customerId);
@@ -613,6 +642,33 @@ const settleCloseBets = async (result, session, req) => {
                     }))
                 }
             });
+
+            notifications.push({
+                customerId: new mongoose.Types.ObjectId(customerId),
+                title: "Congratulations! 🎉 You Won",
+                body: `You won ₹${customerData.totalWinAmount} on your bet. Keep playing!`,
+                channels: ["in_app"],
+                type: "BET_WON",
+                category: "betting",
+                meta: {
+                    note: `Close result declared - Total win amount: ₹${customerData.totalWinAmount} (${customerData.betItems.length} winning bets)`,
+                    marketId: marketId.toString(),
+                    result: `${closePanna}-${closeDigit}`,
+                    session: "close",
+                    winningBets: customerData.betItems.map(b => ({
+                        betItemId: b.betItemId,
+                        winAmount: b.winAmount,
+                        digit: b.digit,
+                        openDigit: b.openDigit,
+                        closeDigit: b.closeDigit,
+                        openPanna: b.openPanna,
+                        closePanna: b.closePanna,
+                        betTypeCode: b.betTypeCode,
+                        session: b.session,
+                        sangamType: b.sangamType
+                    }))
+                }
+            });
         }
 
         if (walletUpdates.length > 0) {
@@ -621,6 +677,10 @@ const settleCloseBets = async (result, session, req) => {
 
         if (transactions.length > 0) {
             await WalletTransaction.insertMany(transactions, { session });
+        }
+
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications, { session });
         }
     }
 
