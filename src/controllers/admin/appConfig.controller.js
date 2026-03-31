@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongodb');
 const httpStatus = require('http-status');
 const ApiError = require('../../utils/ApiError');
 const catchAsync = require('../../utils/catchAsync');
@@ -24,6 +25,8 @@ const getPaymentFeatures = catchAsync(async (req, res) => {
     });
 })
 const updatePaymentFeatures = catchAsync(async (req, res) => {
+     const { id } = req.params;
+     let filterQuery = { _id: new ObjectId(id) };
     const data = await appConfigService.updatePaymentFeatures(req.body);
 
     return res.status(httpStatus.status.OK).json({
