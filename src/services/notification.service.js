@@ -1,4 +1,5 @@
 const Notification = require("../models/notification.model");
+const  admin  = require("../config/firebase");
 
 // Get notifications
 const getUserNotifications = async (customerId) => {
@@ -52,10 +53,43 @@ const deleteAllNotifications = async (customerId) => {
     );
 };
 
+const sendTestNotification = async (fcmToken) => {
+    const message = {
+        token: fcmToken,
+        notification: {
+            title: "Test Notification 🚀",
+            body: "This is a test push notification",
+        },
+        android: {
+            notification: {
+                sound: "default", // 🔥 THIS enables beep
+            },
+        },
+        apns: {
+            payload: {
+                aps: {
+                    sound: "default",
+                },
+            },
+        },
+        data: {
+            type: "TEST",
+        },
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        console.log("Notification sent:", response);
+    } catch (error) {
+        console.error("Error sending notification:", error);
+    }
+};
+
 module.exports = {
     getUserNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    deleteAllNotifications
+    deleteAllNotifications,
+    sendTestNotification
 };

@@ -30,7 +30,22 @@ const getTickets = catchAsync(async (req, res) => {
         data
     });
 })
+const closeTicket = catchAsync(async (req, res) => {
+    const data = await supportService.closeTicket({
+        ticketId: req.params.ticketId,
+        adminId: "69ae7796bca0a2ddab073fdf",
+        remark: req.body.remark
+    });
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Ticket closed successfully",
+        data
+    });
+})
 module.exports = {
     adminReplyToTicket,
-    getTickets
+    getTickets,
+    closeTicket
 }
