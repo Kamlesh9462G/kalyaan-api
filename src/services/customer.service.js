@@ -452,7 +452,13 @@ const getCustomerProfile = async (customerId) => {
                         '$arrayElemAt': [
                             '$wallet.balance', 0
                         ]
-                    }
+                    },
+                    phone: 1,
+                    status: 1,
+                    isDepositBlocked: 1,
+                    isWithdrawBlocked: 1,
+                    createdAt: 1,
+                    lastLoginAt: 1
                 }
             }
         ]);
