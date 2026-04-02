@@ -70,10 +70,22 @@ const createWithdraw = catchAsync(async (req, res) => {
 
 
 });
+const getPendingWithdraws = catchAsync(async (req, res) => {
 
+    const data = await walletService.getPendingWithdraws(req.customer.customerId);
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Pending withdraws fetched successfully",
+        data: data,
+    });
+
+});
 module.exports = {
     getTransactions,
     createDeposit,
     createWithdraw,
-    getCustomerWallet
+    getCustomerWallet,
+    getPendingWithdraws
 }

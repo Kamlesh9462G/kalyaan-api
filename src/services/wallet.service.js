@@ -564,7 +564,7 @@ const rejectDeposit = async (depositId) => {
     category: "transactional",
     channels: ["in_app"],
     data: {
-      amount:deposit.amount,
+      amount: deposit.amount,
       status: "failed",
       reason: "Unknown error"
     },
@@ -801,6 +801,13 @@ const rejectWithdraw = async (withdrawId, adminId, remark) => {
     throw error;
   }
 };
+const getPendingWithdraws = async (customerId) => {
+  try {
+    return await Withdrawal.find({ customerId, status: "requested" });
+  } catch (error) {
+    throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
+  }
+}
 module.exports = {
   getTransactions,
   addWalletBalance,
@@ -813,5 +820,6 @@ module.exports = {
   getDepositRequests,
   getWithdrawRequests,
   rejectDeposit,
-  rejectWithdraw
+  rejectWithdraw,
+  getPendingWithdraws
 }

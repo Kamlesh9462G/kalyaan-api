@@ -461,9 +461,25 @@ const getCustomerProfile = async (customerId) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 }
+const updateCustomerProfile = async (customerId, updateData) => {
+    try {
+        const customer = await Customer.findById(customerId);
+        if (!customer) {
+            throw new ApiError(httpStatus.status.NOT_FOUND, "Customer not found");
+        }
+        Object.keys(updateData).forEach(key => {
+            customer[key] = updateData[key];
+        });
+        await customer.save();
+        return customer;
+    } catch (error) {
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+    }
+}
 module.exports = {
     getCustomer,
     setCustomerName,
     getCustomerProfile,
-    getCustomers
+    getCustomers,
+    updateCustomerProfile
 }

@@ -30,8 +30,23 @@ const getCustomerProfile = catchAsync(async (req, res) => {
         data: result
     });
 });
+
+const updateCustomerProfile = catchAsync(async (req, res) => {
+    const result = await customerService.updateCustomerProfile(
+        req.customer.customerId,
+        req.body
+    );
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Customer profile updated successfully",
+        data: result
+    });
+});
 module.exports = {
     setCustomerName,
-    getCustomerProfile
+    getCustomerProfile,
+    updateCustomerProfile
 }
 
