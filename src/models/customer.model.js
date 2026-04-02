@@ -16,6 +16,11 @@ const customerSchema = new mongoose.Schema(
             unique: true,
             index: true
         },
+        phone: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
 
         // 🔹 AUTH (MPIN)
         mpin: {
