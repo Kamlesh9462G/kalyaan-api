@@ -44,8 +44,22 @@ const closeTicket = catchAsync(async (req, res) => {
         data
     });
 })
+const updateTicketStatus = catchAsync(async (req, res) => {
+    const data = await supportService.updateTicketStatus({
+        ticketId: req.params.ticketId,
+        status: req.body.status
+    });
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "Ticket status updated successfully",
+        data
+    });
+})
 module.exports = {
     adminReplyToTicket,
     getTickets,
-    closeTicket
+    closeTicket,
+    updateTicketStatus
 }

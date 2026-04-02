@@ -9,6 +9,7 @@ const { supportController } = require('../../controllers/admin/index');
 // Get today's status
 router.get('/tickets', supportController.getTickets);
 router.post('/tickets/:ticketId/reply', supportController.adminReplyToTicket);
+router.patch('/tickets/:ticketId/status', supportController.updateTicketStatus);
 
 
 

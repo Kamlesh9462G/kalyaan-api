@@ -127,6 +127,24 @@ const closeTicket = async (ticketId, adminId, remark) => {
     }
 };
 
+const updateTicketStatus = async (ticketId, status) => {
+
+    const ticket = await SupportTicket.findById(ticketId);
+
+    if (!ticket) {
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Ticket not found");
+    }
+
+    if (ticket.status === "closed") {
+        throw new ApiError(httpStatus.status.BAD_REQUEST, "Ticket already closed");
+    }
+
+    ticket.status = status;
+    await ticket.save();
+
+    return ticket;
+}
+
 const getTickets = async () => {
     return await SupportTicket.find();
 
@@ -248,5 +266,6 @@ module.exports = {
     getUserTickets,
     getTicketConversation,
     getUserTicketsWithConversation,
-    getTickets
+    getTickets,
+    updateTicketStatus
 };
