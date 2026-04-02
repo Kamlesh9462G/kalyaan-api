@@ -45,10 +45,10 @@ const closeTicket = catchAsync(async (req, res) => {
     });
 })
 const updateTicketStatus = catchAsync(async (req, res) => {
-    const data = await supportService.updateTicketStatus({
-        ticketId: req.params.ticketId,
-        status: req.body.status
-    });
+    const data = await supportService.updateTicketStatus(
+        req.params.ticketId,
+        req.body.status
+    );
 
     return res.status(httpStatus.status.OK).json({
         success: true,
