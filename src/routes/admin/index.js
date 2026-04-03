@@ -18,6 +18,7 @@ const merchantVpaRoute = require('./merchantVpa.route')
 const referralSettingsRoute = require('./referralSettings.route')
 const notificationsRoute = require('./notification.route')
 const userRoute = require('./user.routes')
+const helpGuideRoute = require('./helpGuide.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -98,6 +99,10 @@ const defaultRoutes = [
     {
         path: '/users',
         route: userRoute
+    },
+    {
+        path: '/help-guides',
+        route: helpGuideRoute
     }
 
 ];

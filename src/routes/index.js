@@ -18,7 +18,7 @@ const referralRoute = require('./referral.route')
 const favouriteRoute = require('./favourite.route')
 const notificationRoute = require('./notification.route')
 const resultRoute = require('./result.route')
-
+const helpGuideRoute = require('./helpGuide.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -97,6 +97,10 @@ const defaultRoutes = [
     {
         path: '/results',
         route: resultRoute
+    },
+        {
+        path: '/help-guides',
+        route: helpGuideRoute
     }
 ];
 
