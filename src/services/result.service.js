@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const { Market, Result, BetItem, BetSlip, Wallet, WalletTransaction, BetType, Notification } = require('../models/index');
 const ApiError = require('../utils/ApiError');
 
+
+const formatDate = (date) => {
+  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
 /**
  * Calculate digit from panna (sum of digits % 10)
  */
@@ -842,7 +847,7 @@ const cancelMarket = async (payload, adminId, req) => {
                         note: `Market cancelled - Refund amount: ₹${refundAmount}`,
                         adminId: adminId,
                         marketId: marketId,
-                        ip: req.ip
+                        // ip: req.ip
                     }
                 });
             }
@@ -1138,7 +1143,54 @@ const getMarketResultsBoard = async (date) => {
     return data;
 };
 
+const getResultHistory = async (filterQuery = {}) => {
+  try {
+    const query = {};
 
+    // ✅ market filter
+    if (filterQuery.marketId) {
+      query.marketId = filterQuery.marketId;
+    }
+
+    // ✅ date filter logic
+    if (filterQuery.startDate && filterQuery.endDate) {
+      query.date = {
+        $gte: filterQuery.startDate,
+        $lte: filterQuery.endDate
+      };
+    } else if (filterQuery.date) {
+      query.date = filterQuery.date;
+    } else {
+      // ✅ DEFAULT: last 1 month (excluding today)
+
+      const today = new Date();
+      const todayStr = formatDate(today); // today
+
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      const oneMonthAgoStr = formatDate(oneMonthAgo);
+
+      query.date = {
+        $gte: oneMonthAgoStr,
+        $lt: todayStr // ❌ exclude today
+      };
+    }
+
+    const results = await Result.find(query)
+      .populate({ path: 'marketId', select: 'name openTime closeTime status' })
+      .populate({ path: 'declaredBy', select: 'name email' })
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+
+    return results || [];
+
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.status.INTERNAL_SERVER_ERROR,
+      error.message || "Failed to fetch result history"
+    );
+  }
+};
 
 module.exports = {
     declareOpenResult,
@@ -1151,5 +1203,6 @@ module.exports = {
     isJodiWinner,
     getResultForBetType,
     getBetTypeCategory,
-    getCurrentDayResult
+    getCurrentDayResult,
+    getResultHistory
 };

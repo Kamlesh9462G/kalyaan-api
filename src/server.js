@@ -3,6 +3,8 @@ const dotenv = require("dotenv");
 const path = require("path");
 const app = require("./app");
 const logger = require("./config/logger");
+const{testConnection} = require('./utils/mailer');
+
 // const socketio = require("socket.io");
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
@@ -32,6 +34,7 @@ mongoose
     logger.info("Connected to MongoDB");
     const server = app.listen(process.env.PORT, () => {
       console.log(`Listening to port ${process.env.PORT}`);
+      testConnection(); // Test the email connection on server start
     });
   })
   .catch((error) => {

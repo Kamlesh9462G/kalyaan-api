@@ -44,10 +44,10 @@ const cancelMarket = catchAsync(async (req, res) => {
 
     const result = await resultService.cancelMarket(
         req.body,
-        req.admin.id
+        "69ae7796bca0a2ddab073fdf"
     );
 
-    res.status(httpStatus.OK).send({
+    res.status(httpStatus.status.OK).send({
         success: true,
         message: "Market cancelled and refunds processed",
         data: result

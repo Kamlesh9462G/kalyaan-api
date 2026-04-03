@@ -35,7 +35,7 @@ const resultSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "open_declared", "close_declared", "completed"],
+      enum: ["pending", "open_declared", "close_declared", "completed",'cancelled'],
       default: "pending"
     },
 

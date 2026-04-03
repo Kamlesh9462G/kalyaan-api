@@ -17,6 +17,7 @@ const merchantVpaRoute = require('./merchantVpa.route')
 const referralRoute = require('./referral.route')
 const favouriteRoute = require('./favourite.route')
 const notificationRoute = require('./notification.route')
+const resultRoute = require('./result.route')
 
 const router = express.Router();
 
@@ -92,6 +93,10 @@ const defaultRoutes = [
     {
         path: '/notifications',
         route: notificationRoute
+    },
+    {
+        path: '/results',
+        route: resultRoute
     }
 ];
 
