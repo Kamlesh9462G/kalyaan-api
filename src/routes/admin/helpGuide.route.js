@@ -9,7 +9,7 @@ router.post("/", helpGuideController.createHelpGuide);
 router.get("/", helpGuideController.getHelpGuide);
 
 // Update
-router.put("/:id", helpGuideController.updateHelpGuide);
+router.patch("/:id", helpGuideController.updateHelpGuide);
 
 // Delete
 router.delete("/:id", helpGuideController.deleteHelpGuide);
