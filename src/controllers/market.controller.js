@@ -1,7 +1,8 @@
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { resultService, marketService,marketBetTypeService } = require("../services/index");
+const { resultService, marketService, marketBetTypeService } = require("../services/index");
+const { weekdays } = require('moment');
 const getMarketsWithResult = catchAsync(async (req, res, next) => {
     const today = new Date().toISOString().slice(0, 10);
 
@@ -26,7 +27,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
     });
 
     const resultMap = new Map();
-    
+
     if (results && results.length) {
         results.forEach((result) => {
             resultMap.set(result.marketId._id.toString(), result);
@@ -46,7 +47,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
                 const openPanna = result.openPanna || "***";
                 const openDigit = result.openDigit || "*";
                 resultString = `${openPanna}-${openDigit}*-${"***"}`;
-            } 
+            }
             else if (result.status === "close_declared" || result.status === "completed") {
                 // Both results declared
                 const openPanna = result.openPanna || "***";
@@ -63,6 +64,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
             name: market.name,
             timings: market.timings,
             result: resultString,
+            weeklyOff: market.weeklyOff,
         };
     });
 
