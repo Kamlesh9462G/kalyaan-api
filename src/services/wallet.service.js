@@ -728,9 +728,9 @@ const approveWithdraw = async (withdrawId, adminId, body) => {
 
     await Notification.create([{
       customerId: withdraw.customerId,
-      title: "Withdrawal Successful 💰",
-      body: `Your withdrawal of ₹${withdraw.amount} has been successfully processed.`,
-      type: "WITHDRAW_SUCCESS",
+      title: "Withdrawal Approved 💰",
+      body: `Your withdrawal of ₹${withdraw.amount} has been approved.`,
+      type: "WITHDRAW_APPROVED",
       category: "transactional",
       channels: ["in_app"],
       data: {
