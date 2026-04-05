@@ -108,6 +108,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
             timings: market.timings,
             result: resultString,
             createdAt:market.createdAt,
+            status: market.status,
             weeklyOff: market.weeklyOff,
             isHoliday: market.isHoliday,
         };
