@@ -16,4 +16,9 @@ router.post("/close", resultController.declareCloseResult);
 
 router.post("/cancel-market", resultController.cancelMarket);
 
+
+router.post("/open-preview", resultController.openPreview);
+router.post("/close-preview", resultController.closePreview);
+
+
 module.exports = router;

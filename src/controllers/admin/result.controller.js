@@ -54,9 +54,33 @@ const cancelMarket = catchAsync(async (req, res) => {
     });
 });
 
+const openPreview = catchAsync(async (req, res) => {
+
+    const data = await resultService.openPreview(req.body);
+
+    res.status(httpStatus.status.OK).send({
+        success: true,
+        message: "Open preview calculated",
+        data
+    });
+});
+
+const closePreview = catchAsync(async (req, res) => {
+
+    const data = await resultService.closePreview(req.body);
+
+    res.status(httpStatus.status.OK).send({
+        success: true,
+        message: "Close preview calculated",
+        data
+    });
+});
+
 module.exports = {
     declareOpenResult,
     declareCloseResult,
     cancelMarket,
-    getResults
+    getResults,
+    openPreview,
+    closePreview
 };

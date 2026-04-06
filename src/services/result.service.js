@@ -5,7 +5,7 @@ const ApiError = require('../utils/ApiError');
 
 
 const formatDate = (date) => {
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD
 };
 
 /**
@@ -1144,52 +1144,259 @@ const getMarketResultsBoard = async (date) => {
 };
 
 const getResultHistory = async (filterQuery = {}) => {
-  try {
-    const query = {};
+    try {
+        const query = {};
 
-    // ✅ market filter
-    if (filterQuery.marketId) {
-      query.marketId = filterQuery.marketId;
+        // ✅ market filter
+        if (filterQuery.marketId) {
+            query.marketId = filterQuery.marketId;
+        }
+
+        // ✅ date filter logic
+        if (filterQuery.startDate && filterQuery.endDate) {
+            query.date = {
+                $gte: filterQuery.startDate,
+                $lte: filterQuery.endDate
+            };
+        } else if (filterQuery.date) {
+            query.date = filterQuery.date;
+        } else {
+            // ✅ DEFAULT: last 1 month (excluding today)
+
+            const today = new Date();
+            const todayStr = formatDate(today); // today
+
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            const oneMonthAgoStr = formatDate(oneMonthAgo);
+
+            query.date = {
+                $gte: oneMonthAgoStr,
+                $lt: todayStr // ❌ exclude today
+            };
+        }
+
+        const results = await Result.find(query)
+            .populate({ path: 'marketId', select: 'name openTime closeTime status' })
+            .populate({ path: 'declaredBy', select: 'name email' })
+            .sort({ date: -1, createdAt: -1 })
+            .lean();
+
+        return results || [];
+
+    } catch (error) {
+        throw new ApiError(
+            httpStatus.status.INTERNAL_SERVER_ERROR,
+            error.message || "Failed to fetch result history"
+        );
+    }
+};
+
+
+
+const openPreview = async ({ marketId, openPanna }) => {
+
+    if (!/^\d{3}$/.test(openPanna)) {
+        throw new Error("Invalid open panna");
     }
 
-    // ✅ date filter logic
-    if (filterQuery.startDate && filterQuery.endDate) {
-      query.date = {
-        $gte: filterQuery.startDate,
-        $lte: filterQuery.endDate
-      };
-    } else if (filterQuery.date) {
-      query.date = filterQuery.date;
-    } else {
-      // ✅ DEFAULT: last 1 month (excluding today)
+    const openDigit = calculateDigit(openPanna);
 
-      const today = new Date();
-      const todayStr = formatDate(today); // today
+    const now = new Date();
 
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      const oneMonthAgoStr = formatDate(oneMonthAgo);
-
-      query.date = {
-        $gte: oneMonthAgoStr,
-        $lt: todayStr // ❌ exclude today
-      };
-    }
-
-    const results = await Result.find(query)
-      .populate({ path: 'marketId', select: 'name openTime closeTime status' })
-      .populate({ path: 'declaredBy', select: 'name email' })
-      .sort({ date: -1, createdAt: -1 })
-      .lean();
-
-    return results || [];
-
-  } catch (error) {
-    throw new ApiError(
-      httpStatus.status.INTERNAL_SERVER_ERROR,
-      error.message || "Failed to fetch result history"
+    // Convert to IST time
+    const istNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
     );
-  }
+
+    // Start of IST day
+    const startOfDayIST = new Date(istNow);
+    startOfDayIST.setHours(0, 0, 0, 0);
+
+    // End of IST day
+    const endOfDayIST = new Date(istNow);
+    endOfDayIST.setHours(23, 59, 59, 999);
+
+    // Convert back to UTC
+    const startOfDayUTC = new Date(startOfDayIST.toISOString());
+    const endOfDayUTC = new Date(endOfDayIST.toISOString());
+
+
+    // 🔥 only OPEN dependent bets
+    const bets = await BetItem.find({
+        marketId,
+        session: "open",
+        status: "pending",
+        betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] },
+
+        createdAt: {
+            $gte: startOfDayUTC,
+            $lte: endOfDayUTC
+        }
+    });
+
+    let totalCollection = 0;
+    let totalPayout = 0;
+    let totalWinningBets = 0;
+
+    for (const bet of bets) {
+
+        totalCollection += bet.amount;
+
+        let win = false;
+
+        // SINGLE
+        if (bet.betTypeCode === "SD") {
+            win = bet.digit == openDigit;
+        }
+
+        // PANNA TYPES
+        if (["SP", "DP", "TP"].includes(bet.betTypeCode)) {
+            win = bet.digit === openPanna;
+        }
+
+        if (win) {
+            totalPayout += bet.possibleWinAmount;
+            totalWinningBets++;
+        }
+    }
+
+    return {
+        openPanna,
+        openDigit,
+        totalBets: bets.length,
+        totalCollection,
+        totalPayout,
+        profit: totalCollection - totalPayout,
+        totalWinningBets
+    };
+};
+
+
+const closePreview = async ({ marketId, openPanna, closePanna }) => {
+
+    if (!/^\d{3}$/.test(openPanna) || !/^\d{3}$/.test(closePanna)) {
+        throw new Error("Invalid panna");
+    }
+
+    const openDigit = calculateDigit(openPanna);
+    const closeDigit = calculateDigit(closePanna);
+    const jodi = `${openDigit}${closeDigit}`;
+
+
+
+
+    const now = new Date();
+
+    // Convert to IST time
+    const istNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    // Start of IST day
+    const startOfDayIST = new Date(istNow);
+    startOfDayIST.setHours(0, 0, 0, 0);
+
+    // End of IST day
+    const endOfDayIST = new Date(istNow);
+    endOfDayIST.setHours(23, 59, 59, 999);
+
+    // Convert back to UTC
+    const startOfDayUTC = new Date(startOfDayIST.toISOString());
+    const endOfDayUTC = new Date(endOfDayIST.toISOString());
+
+
+
+
+    const bets = await BetItem.find({
+        marketId,
+        status: "pending",
+        $or: [
+            // Close session bets (session="close")
+            {
+                session: "close",
+                betTypeCode: { $in: ['SD', 'SP', 'DP', 'TP'] }
+            },
+            // No-session bets that need close result
+            {
+                session: null,
+                betTypeCode: { $in: ['JD', 'HS', 'FS'] }
+            }
+        ],
+        createdAt: {
+            $gte: startOfDayUTC,
+            $lte: endOfDayUTC
+        }
+    });
+
+    let totalCollection = 0;
+    let totalPayout = 0;
+    let totalWinningBets = 0;
+
+    for (const bet of bets) {
+
+        totalCollection += bet.amount;
+
+        let win = false;
+
+        // 🔥 SINGLE CLOSE
+        if (bet.betTypeCode === "SD" && bet.session === "close") {
+            win = bet.digit == closeDigit;
+        }
+
+        // 🔥 JODI
+        if (bet.betTypeCode === "JD") {
+            win = bet.digit == jodi;
+        }
+
+        // 🔥 PANNA CLOSE
+        if (["SP", "DP", "TP"].includes(bet.betTypeCode)) {
+            if (bet.session === "close") {
+                win = bet.digit === closePanna;
+            }
+        }
+
+        // 🔥 HALF SANGAM
+        if (bet.betTypeCode === "HS") {
+
+            if (bet.sangamType === "openDigit_closePanna") {
+                win =
+                    bet.openDigit == openDigit &&
+                    bet.closePanna == closePanna;
+            }
+
+            if (bet.sangamType === "openPanna_closeDigit") {
+                win =
+                    bet.openPanna == openPanna &&
+                    bet.closeDigit == closeDigit;
+            }
+        }
+
+        // 🔥 FULL SANGAM
+        if (bet.betTypeCode === "FS") {
+            win =
+                bet.openPanna == openPanna &&
+                bet.closePanna == closePanna;
+        }
+
+        if (win) {
+            totalPayout += bet.possibleWinAmount;
+            totalWinningBets++;
+        }
+    }
+
+    return {
+        openPanna,
+        closePanna,
+        openDigit,
+        closeDigit,
+        jodi,
+        totalBets: bets.length,
+        totalCollection,
+        totalPayout,
+        profit: totalCollection - totalPayout,
+        totalWinningBets
+    };
 };
 
 module.exports = {
@@ -1204,5 +1411,7 @@ module.exports = {
     getResultForBetType,
     getBetTypeCategory,
     getCurrentDayResult,
-    getResultHistory
+    getResultHistory,
+    openPreview,
+    closePreview
 };
