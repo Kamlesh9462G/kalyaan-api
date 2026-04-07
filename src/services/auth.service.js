@@ -8,7 +8,24 @@ const tokenService = require("./token.service");
 const ApiError = require("../utils/ApiError");
 const httpStatus = require("http-status");
 
+
+// ✅ Dummy accounts config
+const DUMMY_ACCOUNTS = [
+  {
+    email: "test1@gmail.com",
+    otp: "123456",
+  },
+  {
+    email: "test2@gmail.com",
+    otp: "654321",
+  },
+];
+
+
 const sendOtp = async (email, purpose, referralCode) => {
+
+  // 🔍 Check if dummy account
+  const dummyUser = DUMMY_ACCOUNTS.find((u) => u.email === email);
 
   // 🔗 Validate referral only if user not already registered
   const existingCustomer = await Customer.findOne({ email });
@@ -21,16 +38,32 @@ const sendOtp = async (email, purpose, referralCode) => {
     }
   }
 
-  await otpService.generateAndSendOtp(email, purpose);
+  // ❌ Skip OTP sending for dummy users
+  if (!dummyUser) {
+    await otpService.generateAndSendOtp(email, purpose);
+  }
 
   return {
-    message: "OTP sent successfully",
+    message: dummyUser
+      ? "Dummy OTP bypassed"
+      : "OTP sent successfully",
     data: { email, purpose },
   };
 };
 
 const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
-  await otpService.verifyOtp(email, otp, purpose);
+
+  // 🔍 Check if dummy account
+  const dummyUser = DUMMY_ACCOUNTS.find((u) => u.email === email);
+
+  // ✅ Validate OTP
+  if (dummyUser) {
+    if (otp !== dummyUser.otp) {
+      throw new ApiError(httpStatus.status.BAD_REQUEST, "Invalid OTP");
+    }
+  } else {
+    await otpService.verifyOtp(email, otp, purpose);
+  }
 
   let customer = await Customer.findOne({ email }).select("+mpin");
   let isNewCustomer = false;
@@ -41,29 +74,23 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
   // =========================================================
   if (!customer) {
 
-    // 🔗 Validate referral (only for new users)
     if (referralCode) {
       referrer = await Customer.findOne({ referralCode });
 
       if (!referrer) {
         throw new ApiError(
-          httpStatus.BAD_REQUEST,
+          httpStatus.status.BAD_REQUEST,
           "Invalid referral code"
         );
       }
 
-      // 🚫 Prevent self-referral
       if (referrer.email === email) {
         throw new ApiError(
-          httpStatus.BAD_REQUEST,
+          httpStatus.status.BAD_REQUEST,
           "You cannot use your own referral code"
         );
       }
     }
-
-    // =========================================================
-    // 👤 CREATE CUSTOMER
-    // =========================================================
 
     customer = await Customer.create({
       email,
@@ -73,19 +100,14 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
 
     isNewCustomer = true;
 
-    // =========================================================
-    // 📊 CREATE REFERRAL RECORD
-    // =========================================================
-
     if (referrer) {
       await Referral.create({
         referrer: referrer._id,
         referredUser: customer._id,
         status: "PENDING",
-        totalDeposit: 0, // ✅ IMPORTANT INITIALIZATION
+        totalDeposit: 0,
       });
 
-      // 📈 Increase referrer count
       await Customer.findByIdAndUpdate(referrer._id, {
         $inc: { referralCount: 1 }
       });
