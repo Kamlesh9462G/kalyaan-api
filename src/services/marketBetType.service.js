@@ -315,23 +315,18 @@ const getMarketBetTypes = async (marketId) => {
         }
       },
 
-      // ✅ FIXED: Clear conditional logic
+      // ✅ Conditional logic
       {
         $match: {
           $expr: {
             $or: [
-              // Case 1: No result exists for today - include ALL bet types
               { $eq: ["$hasResultForToday", false] },
-              
-              // Case 2: Result exists but openPanna is null/not declared - include ALL bet types
               {
                 $and: [
                   { $eq: ["$hasResultForToday", true] },
                   { $eq: ["$resultObj.openPanna", null] }
                 ]
               },
-              
-              // Case 3: Result exists AND openPanna is declared - exclude JD, HS, FS
               {
                 $and: [
                   { $eq: ["$hasResultForToday", true] },
@@ -344,7 +339,14 @@ const getMarketBetTypes = async (marketId) => {
         }
       },
 
-      // ✅ Optional: Remove temporary fields
+      // ✅ SORT ADDED HERE (based on betType._id)
+      {
+        $sort: {
+          "betType._id": 1
+        }
+      },
+
+      // ✅ Final projection
       {
         $project: {
           _id: 1,
@@ -359,10 +361,7 @@ const getMarketBetTypes = async (marketId) => {
           defaultPayout: 1,
           status: 1,
           createdAt: 1,
-          updatedAt: 1,
-          // hasResultForToday: 0,  // Remove temporary field
-          // resultObj: 0,           // Remove temporary field
-          // result: 0               // Remove temporary field
+          updatedAt: 1
         }
       }
     ]);
