@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { marketBetTypeController } = require('../../controllers/admin');
 
+
+const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
+router.use(auth);
+
+
 // CREATE
 router.post('/', marketBetTypeController.addMarketBetType);
 

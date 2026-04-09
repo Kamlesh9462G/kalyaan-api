@@ -1,14 +1,18 @@
 // middlewares/auth.middleware.js
 const jwt = require("jsonwebtoken");
-const User = require("../../models/index");
+const { User } = require("../../models/index");
 
 const auth = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
 
+        console.log("Received token:", token); // Debugging line
+
         if (!token) throw new Error("No token");
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        console.log("Decoded JWT:", decoded); // Debugging line
 
         const user = await User.findById(decoded.id);
 
@@ -19,6 +23,7 @@ const auth = async (req, res, next) => {
         req.user = user;
         next();
     } catch (err) {
+        console.error("Authentication error:", err); // Debugging line  
         res.status(401).json({ message: "Unauthorized" });
     }
 };

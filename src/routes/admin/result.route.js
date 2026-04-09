@@ -3,9 +3,8 @@ const router = express.Router();
 const { resultController } = require('../../controllers/admin/index');
 
 
-// // All routes require authentication
-// router.use(auth());
-
+const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
+router.use(auth);
 
 
 router.get("/", resultController.getResults);
