@@ -18,3 +18,4 @@ module.exports.referralSettingsController = require('./referralSettings.controll
 module.exports.notificationController = require('./notification.controller')
 module.exports.userController = require('./user.controller')
 module.exports.helpGuideController = require('./helpGuide.controller')
+module.exports.dashboardController = require('./dashboard.controller')
