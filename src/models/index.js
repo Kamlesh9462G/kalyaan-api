@@ -31,3 +31,7 @@ module.exports.Referral = require('./referral.model')
 module.exports.Favourite = require('./favourite.model')
 module.exports.User = require('./user.model')
 module.exports.HelpGuide = require('./HelpGuide.model')
+
+module.exports.HeroBanner = require('./heroBanner.model')
+module.exports.Announcement = require('./announcement.model')
+module.exports.CTABanner = require('./ctaBanner.model')

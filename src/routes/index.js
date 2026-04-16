@@ -19,6 +19,7 @@ const favouriteRoute = require('./favourite.route')
 const notificationRoute = require('./notification.route')
 const resultRoute = require('./result.route')
 const helpGuideRoute = require('./helpGuide.route')
+const bannerRoute = require('./banner.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -98,9 +99,13 @@ const defaultRoutes = [
         path: '/results',
         route: resultRoute
     },
-        {
+    {
         path: '/help-guides',
         route: helpGuideRoute
+    },
+    {
+        path: '/banners',
+        route: bannerRoute
     }
 ];
 

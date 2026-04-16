@@ -20,6 +20,7 @@ const notificationsRoute = require('./notification.route')
 const userRoute = require('./user.routes')
 const helpGuideRoute = require('./helpGuide.route')
 const dashboardRoute = require('./dashboard.route')
+const bannerRoute = require('./banner.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -108,6 +109,10 @@ const defaultRoutes = [
     {
         path: '/dashboard',
         route: dashboardRoute
+    },
+    {
+        path: '/banners',
+        route: bannerRoute
     }
 
 ];
