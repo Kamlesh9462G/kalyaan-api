@@ -21,6 +21,7 @@ const resultRoute = require('./result.route')
 const helpGuideRoute = require('./helpGuide.route')
 const bannerRoute = require('./banner.route')
 const quizRoute = require('./quiz.route')
+const pointsRoute = require('./point.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -111,6 +112,10 @@ const defaultRoutes = [
     {
         path: '/banners',
         route: bannerRoute
+    },
+    {
+        path:'/points',
+        route: pointsRoute
     }
 ];
 
