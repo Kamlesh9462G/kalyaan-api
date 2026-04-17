@@ -9,7 +9,7 @@ const { sidebarController } = require('../controllers/index');
 // Get today's status
 router.post('/', sidebarController.addSidebar);
 router.get('/', sidebarController.getSidebars);
-router.get('/app', sidebarController.getSidebars);
+router.get('/app', sidebarController.getAPPSidebars);
 
 
 

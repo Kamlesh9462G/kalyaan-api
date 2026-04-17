@@ -21,6 +21,24 @@ const getSidebars = catchAsync(async (req, res) => {
     let filterQuery = {};
 
     filterQuery.isEnabled = true;
+    filterQuery.name = "APP";
+
+    const data = await sidebarService.getSidebars(filterQuery);
+
+    return res.status(httpStatus.status.OK).json({
+        success: true,
+        status: httpStatus.status.OK,
+        message: "sidebars fetched successfully",
+        data: data
+    });
+})
+
+const getAPPSidebars = catchAsync(async (req, res) => {
+
+    let filterQuery = {};
+
+    filterQuery.isEnabled = true;
+    filterQuery.name = "APP";
 
     const data = await sidebarService.getSidebars(filterQuery);
 
@@ -34,5 +52,6 @@ const getSidebars = catchAsync(async (req, res) => {
 
 module.exports = {
     addSidebar,
-    getSidebars
+    getSidebars,
+    getAPPSidebars
 }
