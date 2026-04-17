@@ -20,6 +20,7 @@ const notificationRoute = require('./notification.route')
 const resultRoute = require('./result.route')
 const helpGuideRoute = require('./helpGuide.route')
 const bannerRoute = require('./banner.route')
+const quizRoute = require('./quiz.route')
 const router = express.Router();
 
 const defaultRoutes = [
@@ -42,6 +43,10 @@ const defaultRoutes = [
     {
         path: "/markets",
         route: marketRoute
+    },
+    {
+        path: "/quizes",
+        route: quizRoute
     },
     {
         path: "/rates",

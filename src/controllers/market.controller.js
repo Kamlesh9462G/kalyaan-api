@@ -72,6 +72,7 @@ const getMarketsWithResult = catchAsync(async (req, res, next) => {
         success: true,
         status: httpStatus.status.OK,
         message: "Markets fetched successfully",
+        buttonValue: "Start Quiz",
         data: formattedMarkets,
     });
 });

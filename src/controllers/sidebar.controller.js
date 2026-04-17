@@ -18,7 +18,11 @@ const addSidebar = catchAsync(async (req, res) => {
 
 const getSidebars = catchAsync(async (req, res) => {
 
-    const data = await sidebarService.getSidebars();
+    let filterQuery = {};
+
+    filterQuery.isEnabled = true;
+
+    const data = await sidebarService.getSidebars(filterQuery);
 
     return res.status(httpStatus.status.OK).json({
         success: true,

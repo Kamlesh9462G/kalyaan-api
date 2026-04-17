@@ -10,9 +10,10 @@ const addSidebar = async (sidebarData) => {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
 }
-const getSidebars = async () => {
+const getSidebars = async (filterQuery) => {
+    console.log(filterQuery)
     try {
-        return await Sidebar.find()
+        return await Sidebar.find(filterQuery)
     } catch (error) {
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message)
     }
