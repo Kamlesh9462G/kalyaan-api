@@ -12,4 +12,6 @@ router.get("/category/:id",
 
 router.post("/submit", auth(), betController.placeBet);
 
+router.get("/history", auth(), betController.getBetHistory);
+
 module.exports = router;
