@@ -326,11 +326,44 @@ const logout = async ({ refreshToken, customerId, accessToken = null, logoutAll 
   }
 };
 
+
+const changeMpin = async ({ customerId, currentMpin, newMpin, confirmMpin }) => {
+  if (newMpin !== confirmMpin) {
+    throw new ApiError(httpStatus.status.BAD_REQUEST, "New MPIN and confirm MPIN do not match");
+  }
+
+  const customer = await Customer.findById(customerId).select("+mpin");
+
+  if (!customer || !customer.mpin) {
+    throw new ApiError(httpStatus.status.BAD_REQUEST, "MPIN not set");
+  }
+
+  const isMatch = await bcrypt.compare(currentMpin, customer.mpin);
+
+  if (!isMatch) {
+    throw new ApiError(httpStatus.status.UNAUTHORIZED, "Current MPIN is incorrect");
+  }
+
+  const hashedMpin = await bcrypt.hash(newMpin, 10);
+  customer.mpin = hashedMpin;
+  await customer.save();
+
+  return {
+    message: "MPIN changed successfully",
+    data: {
+      customerId: customer._id,
+      name: customer.name,
+      email: customer.email,
+    },
+  };
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   setMpin,
   verifyMpin,
   resetMpin,
-  logout
+  logout,
+  changeMpin
 };
