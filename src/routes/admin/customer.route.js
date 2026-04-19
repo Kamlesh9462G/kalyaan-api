@@ -6,6 +6,6 @@ const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middle
 
 
 
-router.get("/", auth, customerController.getCustomers);
+router.get("/",  customerController.getCustomers);
 
 module.exports = router;

@@ -4,7 +4,7 @@ const { resultController } = require('../../controllers/admin/index');
 
 
 const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
-router.use(auth);
+// router.use(auth);
 
 
 router.get("/", resultController.getResults);

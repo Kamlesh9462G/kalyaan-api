@@ -5,7 +5,7 @@ const router = express.Router();
 
 
 const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
-router.use(auth);
+// router.use(auth);
 
 
 /* Admin */

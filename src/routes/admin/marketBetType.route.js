@@ -4,7 +4,7 @@ const { marketBetTypeController } = require('../../controllers/admin');
 
 
 const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
-router.use(auth);
+// router.use(auth);
 
 
 // CREATE

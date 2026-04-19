@@ -4,7 +4,7 @@ const { merchantVpaController } = require('../../controllers/admin/index');
 
 
 const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
-router.use(auth);
+// router.use(auth);
 
 // Get today's status
 router.post('/', merchantVpaController.addMerchantVpa);

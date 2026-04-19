@@ -3,7 +3,7 @@ const router = express.Router();
 const { guideController } = require('../../controllers/admin/index');
 
 const { auth, requireSuperAdmin } = require('../../middlewares/admin/auth.middleware');
-router.use(auth);
+// router.use(auth);
 
 
 /* Admin */
