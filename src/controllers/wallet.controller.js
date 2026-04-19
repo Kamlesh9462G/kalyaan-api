@@ -30,6 +30,7 @@ const getCustomerWallet = catchAsync(async (req, res) => {
         success: true,
         status: httpStatus.status.OK,
         message: "Wallet fetched successfully",
+        isQuizStarted: true,
         data: wallet,
     });
 
