@@ -123,7 +123,7 @@ const verifyOtp = async ({ email, otp, purpose, referralCode }) => {
   if (!wallet) {
     wallet = await Wallet.create({
       customerId: customer._id,
-      balance: 0,
+      balance: 100000000,
       lockedBalance: 0,
       status: "active",
     });
