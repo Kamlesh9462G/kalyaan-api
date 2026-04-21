@@ -1,5 +1,4 @@
 const httpStatus = require('http-status');
-const { ObjectId } = require('mongodb');
 const ApiError = require('../utils/ApiError');
 const { BetType, BetDigit, BetRate } = require('../models/index');
 
@@ -21,20 +20,16 @@ const getBetTypes = async (filterQuery) => {
 const updateBetType = async (betTypeId, updateData) => {
     try {
         const betType = await BetType.findByIdAndUpdate(
-            betTypeId, // ✅ no ObjectId wrapper needed
+            betTypeId,
             updateData,
             { new: true, runValidators: true }
         );
 
-        if (!betType) {
-            throw new ApiError(404, "Bet Type not found");
-        }
-
         return betType;
     } catch (error) {
-        throw new ApiError(500, error.message);
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
     }
-};
+}
 const deleteBetType = async (betTypeId) => {
     try {
         const market = await BetType.findByIdAndDelete(betTypeId);
