@@ -23,16 +23,23 @@ const getBetTypes = catchAsync(async (req, res) => {
     });
 })
 const updateBetType = catchAsync(async (req, res) => {
-    const { id } = req.query;
+    const { id } = req.query; // ✅ get from query
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            message: "ID is required in query",
+        });
+    }
 
     const betTypes = await betTypeService.updateBetType(id, req.body);
-    return res.status(httpStatus.status.OK).json({
+
+    return res.status(200).json({
         success: true,
-        status: httpStatus.status.OK,
         message: "Bet Type updated successfully",
         data: betTypes,
     });
-})
+});
 const deleteBetType = catchAsync(async (req, res) => {
     const { id } = req.params;
 

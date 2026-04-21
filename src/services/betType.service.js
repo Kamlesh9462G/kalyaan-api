@@ -19,20 +19,22 @@ const getBetTypes = async (filterQuery) => {
     }
 }
 const updateBetType = async (betTypeId, updateData) => {
-    console.log("Updating bet type with ID:", betTypeId);
-    console.log("Update data:", updateData);
     try {
         const betType = await BetType.findByIdAndUpdate(
-            {_id:new ObjectId(betTypeId)},
+            betTypeId, // ✅ no ObjectId wrapper needed
             updateData,
             { new: true, runValidators: true }
         );
 
+        if (!betType) {
+            throw new ApiError(404, "Bet Type not found");
+        }
+
         return betType;
     } catch (error) {
-        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
+        throw new ApiError(500, error.message);
     }
-}
+};
 const deleteBetType = async (betTypeId) => {
     try {
         const market = await BetType.findByIdAndDelete(betTypeId);
