@@ -18,7 +18,12 @@ const addQuickAction = catchAsync(async (req, res) => {
 
 const getQuickActions = catchAsync(async (req, res) => {
 
-    const data = await quickActionService.getQuickActions();
+    let filterQuery = {};
+
+    filterQuery.isEnabled = true;
+    filterQuery.name = "APP";
+
+    const data = await quickActionService.getQuickActions(filterQuery);
 
     return res.status(httpStatus.status.OK).json({
         success: true,
