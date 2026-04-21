@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const { ObjectId } = require('mongodb');
 const ApiError = require('../utils/ApiError');
 const { BetType, BetDigit, BetRate } = require('../models/index');
 
@@ -20,14 +21,14 @@ const getBetTypes = async (filterQuery) => {
 const updateBetType = async (betTypeId, updateData) => {
     try {
         const betType = await BetType.findByIdAndUpdate(
-            betTypeId,
+            {_id:new ObjectId(betTypeId)},
             updateData,
             { new: true, runValidators: true }
         );
 
         return betType;
     } catch (error) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+        throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 }
 const deleteBetType = async (betTypeId) => {
