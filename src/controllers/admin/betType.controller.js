@@ -88,7 +88,7 @@ const updateBetTypeRate = catchAsync(async (req, res) => {
     const updatedRate = await betTypeService.updateBetTypeRate(id, req.body);
 
     if (!updatedRate) {
-        throw new ApiError(httpStatus.status.status.NOT_FOUND, "Rate not found");
+        throw new ApiError(httpStatus.status.NOT_FOUND, "Rate not found");
     }
 
     return res.status(httpStatus.status.OK).json({
