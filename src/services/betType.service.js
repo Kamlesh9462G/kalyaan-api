@@ -115,6 +115,8 @@ const getBetTypeRates = async (filterQuery) => {
 
 // ✅ UPDATE
 const updateBetTypeRate = async (rateId, updateData) => {
+    console.log("Updating rate with ID:", rateId);
+    console.log("Update data:", updateData);
     try {
         const rate = await BetRate.findByIdAndUpdate(
             rateId,
@@ -124,6 +126,7 @@ const updateBetTypeRate = async (rateId, updateData) => {
 
         return rate;
     } catch (error) {
+        console.error("Error updating rate:", error);
         throw new ApiError(httpStatus.status.INTERNAL_SERVER_ERROR, error.message);
     }
 };
