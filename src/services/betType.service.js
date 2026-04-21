@@ -19,6 +19,8 @@ const getBetTypes = async (filterQuery) => {
     }
 }
 const updateBetType = async (betTypeId, updateData) => {
+    console.log("Updating bet type with ID:", betTypeId);
+    console.log("Update data:", updateData);
     try {
         const betType = await BetType.findByIdAndUpdate(
             {_id:new ObjectId(betTypeId)},

@@ -23,7 +23,7 @@ const getBetTypes = catchAsync(async (req, res) => {
     });
 })
 const updateBetType = catchAsync(async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.query;
 
     const betTypes = await betTypeService.updateBetType(id, req.body);
     return res.status(httpStatus.status.OK).json({
