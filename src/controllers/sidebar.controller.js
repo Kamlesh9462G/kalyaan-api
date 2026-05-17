@@ -21,7 +21,7 @@ const getSidebars = catchAsync(async (req, res) => {
     let filterQuery = {};
 
     filterQuery.isEnabled = true;
-    filterQuery.name = "APP";
+    // filterQuery.name = "APP";
 
     const data = await sidebarService.getSidebars(filterQuery);
 
